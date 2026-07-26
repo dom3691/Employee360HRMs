@@ -21,10 +21,30 @@ public class Employee360DbContext : DbContext, IUnitOfWork
     /// <summary>Immutable audit trail rows (written by the audit interceptor).</summary>
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
+    /// <summary>Employee records (minimal shape; expanded by the Batch 5 slices).</summary>
+    public DbSet<Employee> Employees => Set<Employee>();
+
+    /// <summary>Authentication accounts.</summary>
+    public DbSet<User> Users => Set<User>();
+
+    /// <summary>RBAC roles.</summary>
+    public DbSet<Role> Roles => Set<Role>();
+
+    /// <summary>Granular permission catalog.</summary>
+    public DbSet<Permission> Permissions => Set<Permission>();
+
+    /// <summary>Role ↔ permission grants.</summary>
+    public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+
+    /// <summary>User ↔ role assignments.</summary>
+    public DbSet<UserRole> UserRoles => Set<UserRole>();
+
+    /// <summary>Issued refresh tokens.</summary>
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
     // -----------------------------------------------------------------------
     // DbSets grow batch by batch:
-    //   Batch 4+: Employees, Departments, Positions, Grades, EmployeeDocuments
-    //   Batch 5+: Users, Roles, Permissions
+    //   Batch 5+: Departments, Positions, Grades, EmployeeDocuments
     //   Batch 6+: LeaveTypes, LeavePolicies, LeaveBalances, LeaveRequests
     //   Phase 2:  AttendanceRecords, Shifts, PayrollRuns, Payslips
     // -----------------------------------------------------------------------
