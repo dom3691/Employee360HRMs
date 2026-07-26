@@ -4,23 +4,32 @@ using Microsoft.Extensions.Logging;
 
 namespace Employee360.Application.Features.Leave.Common;
 
-/// <summary>Default <see cref="ILeaveNotifier"/> over <see cref="IEmailService"/>.</summary>
+/// <summary>
+/// Default <see cref="ILeaveNotifier"/>: sends email and raises an in-app
+/// notification for each workflow event (FR-LV-011 + FR-ESS-001).
+/// </summary>
 public sealed class LeaveNotifier : ILeaveNotifier
 {
     private readonly IEmailService _emailService;
+    private readonly INotificationService _notificationService;
     private readonly ILogger<LeaveNotifier> _logger;
 
-    public LeaveNotifier(IEmailService emailService, ILogger<LeaveNotifier> logger)
+    public LeaveNotifier(
+        IEmailService emailService,
+        INotificationService notificationService,
+        ILogger<LeaveNotifier> logger)
     {
         _emailService = emailService;
+        _notificationService = notificationService;
         _logger = logger;
     }
 
     /// <inheritdoc />
-    public Task NotifySubmittedAsync(
+    public async Task NotifySubmittedAsync(
         LeaveRequest request, Employee employee, Employee approver,
         CancellationToken cancellationToken = default)
-        => SendSafelyAsync(
+    {
+        await SendSafelyAsync(
             approver.Email,
             $"Leave Request from {employee.FullName} — Action Required",
             $"""
@@ -31,11 +40,21 @@ public sealed class LeaveNotifier : ILeaveNotifier
             """,
             cancellationToken);
 
+        await _notificationService.NotifyEmployeeAsync(
+            approver.Id,
+            "Leave approval required",
+            $"{employee.FullName} requested {request.Days} day(s) " +
+            $"({request.StartDate:dd/MM/yyyy} – {request.EndDate:dd/MM/yyyy}).",
+            "/leave/approval-queue",
+            cancellationToken);
+    }
+
     /// <inheritdoc />
-    public Task NotifyDecisionAsync(
+    public async Task NotifyDecisionAsync(
         LeaveRequest request, Employee employee, string decision, string? comments,
         CancellationToken cancellationToken = default)
-        => SendSafelyAsync(
+    {
+        await SendSafelyAsync(
             employee.Email,
             $"Your Leave Request has been {decision}",
             $"""
@@ -46,11 +65,21 @@ public sealed class LeaveNotifier : ILeaveNotifier
             """,
             cancellationToken);
 
+        await _notificationService.NotifyEmployeeAsync(
+            employee.Id,
+            $"Leave request {decision.ToLowerInvariant()}",
+            $"Your request for {request.Days} day(s) " +
+            $"({request.StartDate:dd/MM/yyyy} – {request.EndDate:dd/MM/yyyy}) was {decision.ToLowerInvariant()}.",
+            "/leave/requests",
+            cancellationToken);
+    }
+
     /// <inheritdoc />
-    public Task NotifyEscalatedAsync(
+    public async Task NotifyEscalatedAsync(
         LeaveRequest request, Employee employee, Employee newApprover,
         CancellationToken cancellationToken = default)
-        => SendSafelyAsync(
+    {
+        await SendSafelyAsync(
             newApprover.Email,
             $"Escalated: Pending Leave Approval for {employee.FullName}",
             $"""
@@ -59,6 +88,14 @@ public sealed class LeaveNotifier : ILeaveNotifier
             has exceeded the approval SLA and is now assigned to you.</p>
             """,
             cancellationToken);
+
+        await _notificationService.NotifyEmployeeAsync(
+            newApprover.Id,
+            "Escalated leave approval",
+            $"A leave request from {employee.FullName} exceeded the approval SLA and needs your action.",
+            "/leave/approval-queue",
+            cancellationToken);
+    }
 
     private async Task SendSafelyAsync(
         string to, string subject, string body, CancellationToken cancellationToken)
