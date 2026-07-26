@@ -38,6 +38,9 @@ public static class DependencyInjection
         services.AddScoped<ILeaveNotifier, LeaveNotifier>();
         services.AddScoped<LeaveDecisionService>();
 
+        // In-app notifications (FR-ESS-001).
+        services.AddScoped<INotificationService, NotificationService>();
+
         return services;
     }
 }
