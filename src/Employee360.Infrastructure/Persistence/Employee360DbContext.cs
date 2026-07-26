@@ -85,6 +85,9 @@ public class Employee360DbContext : DbContext, IUnitOfWork, IApplicationDbContex
     /// <summary>Public holiday calendar.</summary>
     public DbSet<PublicHoliday> PublicHolidays => Set<PublicHoliday>();
 
+    /// <summary>In-app notifications.</summary>
+    public DbSet<Notification> Notifications => Set<Notification>();
+
     // -----------------------------------------------------------------------
     // DbSets grow batch by batch:
     //   Phase 2: AttendanceRecords, Shifts, PayrollRuns, Payslips

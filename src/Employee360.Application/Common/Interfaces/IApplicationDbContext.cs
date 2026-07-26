@@ -52,6 +52,9 @@ public interface IApplicationDbContext
     /// <summary>Public holiday calendar.</summary>
     DbSet<PublicHoliday> PublicHolidays { get; }
 
+    /// <summary>In-app notifications.</summary>
+    DbSet<Notification> Notifications { get; }
+
     /// <summary>Authentication accounts.</summary>
     DbSet<User> Users { get; }
 
