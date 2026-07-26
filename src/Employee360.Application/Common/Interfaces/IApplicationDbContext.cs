@@ -34,6 +34,24 @@ public interface IApplicationDbContext
     /// <summary>Profile change requests awaiting HR review.</summary>
     DbSet<ProfileChangeRequest> ProfileChangeRequests { get; }
 
+    /// <summary>Leave categories.</summary>
+    DbSet<LeaveType> LeaveTypes { get; }
+
+    /// <summary>Leave accrual/carry-forward policies.</summary>
+    DbSet<LeavePolicy> LeavePolicies { get; }
+
+    /// <summary>Per-employee, per-type, per-year balances.</summary>
+    DbSet<LeaveBalance> LeaveBalances { get; }
+
+    /// <summary>Leave applications.</summary>
+    DbSet<LeaveRequest> LeaveRequests { get; }
+
+    /// <summary>Approval step history.</summary>
+    DbSet<LeaveApproval> LeaveApprovals { get; }
+
+    /// <summary>Public holiday calendar.</summary>
+    DbSet<PublicHoliday> PublicHolidays { get; }
+
     /// <summary>Authentication accounts.</summary>
     DbSet<User> Users { get; }
 

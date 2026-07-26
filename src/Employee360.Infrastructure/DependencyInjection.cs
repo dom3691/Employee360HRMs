@@ -9,7 +9,9 @@ using Employee360.Infrastructure.Persistence.Interceptors;
 using Employee360.Infrastructure.Persistence.Repositories;
 using Employee360.Infrastructure.Persistence.Seeding;
 using Employee360.Application.Common.Models;
+using Employee360.Infrastructure.BackgroundJobs;
 using Employee360.Infrastructure.Services;
+using Hangfire;
 using Employee360.Infrastructure.Services.Email;
 using Employee360.Infrastructure.Services.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -49,6 +51,9 @@ public static class DependencyInjection
         // Employee module settings (code format, FR-EMP-001).
         services.Configure<EmployeeSettings>(configuration.GetSection(EmployeeSettings.SectionName));
 
+        // Leave module settings (escalation SLA, FR-LV-009).
+        services.Configure<LeaveSettings>(configuration.GetSection(LeaveSettings.SectionName));
+
         // ---------------------------------------------------------------
         // Persistence: DbContext (+ audit interceptor), repositories, UoW
         // ---------------------------------------------------------------
@@ -85,11 +90,26 @@ public static class DependencyInjection
         services.AddHostedService<DataSeedHostedService>();
 
         // ---------------------------------------------------------------
-        // Background jobs (later batches): Hangfire server + SQL storage
+        // Background jobs: Hangfire server + SQL storage (FR-LV accrual and
+        // escalation). Disabled via "Hangfire:Enabled" in environments without
+        // a reachable SQL Server (e.g. local Swagger exploration).
         // ---------------------------------------------------------------
-        // services.AddHangfire(cfg => cfg.UseSqlServerStorage(
-        //     configuration.GetConnectionString("HangfireConnection")));
-        // services.AddHangfireServer();
+        services.AddScoped<LeaveAccrualJob>();
+        services.AddScoped<LeaveEscalationJob>();
+
+        if (configuration.GetValue("Hangfire:Enabled", defaultValue: false))
+        {
+            services.AddHangfire(cfg => cfg
+                .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                .UseSimpleAssemblyNameTypeSerializer()
+                .UseRecommendedSerializerSettings()
+                .UseSqlServerStorage(configuration.GetConnectionString("HangfireConnection")));
+
+            services.AddHangfireServer(options =>
+            {
+                options.WorkerCount = configuration.GetValue("Hangfire:WorkerCount", 5);
+            });
+        }
 
         // ---------------------------------------------------------------
         // File storage: Azure Blob (employee documents, payslips)

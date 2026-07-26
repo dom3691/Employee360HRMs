@@ -67,10 +67,27 @@ public class Employee360DbContext : DbContext, IUnitOfWork, IApplicationDbContex
     /// <summary>Password reset tokens.</summary>
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 
+    /// <summary>Leave categories.</summary>
+    public DbSet<LeaveType> LeaveTypes => Set<LeaveType>();
+
+    /// <summary>Leave accrual/carry-forward policies.</summary>
+    public DbSet<LeavePolicy> LeavePolicies => Set<LeavePolicy>();
+
+    /// <summary>Per-employee, per-type, per-year balances.</summary>
+    public DbSet<LeaveBalance> LeaveBalances => Set<LeaveBalance>();
+
+    /// <summary>Leave applications.</summary>
+    public DbSet<LeaveRequest> LeaveRequests => Set<LeaveRequest>();
+
+    /// <summary>Approval step history.</summary>
+    public DbSet<LeaveApproval> LeaveApprovals => Set<LeaveApproval>();
+
+    /// <summary>Public holiday calendar.</summary>
+    public DbSet<PublicHoliday> PublicHolidays => Set<PublicHoliday>();
+
     // -----------------------------------------------------------------------
     // DbSets grow batch by batch:
-    //   Batch 7+: LeaveTypes, LeavePolicies, LeaveBalances, LeaveRequests
-    //   Phase 2:  AttendanceRecords, Shifts, PayrollRuns, Payslips
+    //   Phase 2: AttendanceRecords, Shifts, PayrollRuns, Payslips
     // -----------------------------------------------------------------------
 
     /// <inheritdoc />
