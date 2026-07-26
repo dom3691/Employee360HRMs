@@ -21,6 +21,12 @@ public class Department : AuditableEntity, ISoftDelete
     /// <summary>Navigation to the parent department.</summary>
     public Department? ParentDepartment { get; set; }
 
+    /// <summary>Department head (FR-EMP-009), or null when unassigned.</summary>
+    public Guid? HeadEmployeeId { get; set; }
+
+    /// <summary>Navigation to the department head.</summary>
+    public Employee? HeadEmployee { get; set; }
+
     /// <summary>Employees assigned to this department.</summary>
     public ICollection<Employee> Employees { get; set; } = new List<Employee>();
 

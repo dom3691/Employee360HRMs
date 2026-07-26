@@ -31,6 +31,9 @@ public class Employee360DbContext : DbContext, IUnitOfWork, IApplicationDbContex
     /// <summary>Positions / job titles.</summary>
     public DbSet<Position> Positions => Set<Position>();
 
+    /// <summary>Salary grades / levels.</summary>
+    public DbSet<Grade> Grades => Set<Grade>();
+
     /// <summary>Employee payroll bank accounts.</summary>
     public DbSet<EmployeeBankAccount> EmployeeBankAccounts => Set<EmployeeBankAccount>();
 

@@ -20,6 +20,12 @@ public class Position : AuditableEntity, ISoftDelete
     /// <summary>Navigation to the owning department.</summary>
     public Department? Department { get; set; }
 
+    /// <summary>Salary grade for the position, when banded.</summary>
+    public Guid? GradeId { get; set; }
+
+    /// <summary>Navigation to the grade.</summary>
+    public Grade? Grade { get; set; }
+
     /// <summary>Employees holding this position.</summary>
     public ICollection<Employee> Employees { get; set; } = new List<Employee>();
 

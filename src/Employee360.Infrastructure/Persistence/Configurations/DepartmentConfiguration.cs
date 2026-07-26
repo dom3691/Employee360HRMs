@@ -30,6 +30,11 @@ public sealed class DepartmentConfiguration : IEntityTypeConfiguration<Departmen
             .HasForeignKey(d => d.ParentDepartmentId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne(d => d.HeadEmployee)
+            .WithMany()
+            .HasForeignKey(d => d.HeadEmployeeId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         builder.Ignore(d => d.DomainEvents);
     }
 }
