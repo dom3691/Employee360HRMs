@@ -19,6 +19,9 @@ public interface IApplicationDbContext
     /// <summary>Positions / job titles.</summary>
     DbSet<Position> Positions { get; }
 
+    /// <summary>Salary grades / levels.</summary>
+    DbSet<Grade> Grades { get; }
+
     /// <summary>Employee payroll bank accounts.</summary>
     DbSet<EmployeeBankAccount> EmployeeBankAccounts { get; }
 

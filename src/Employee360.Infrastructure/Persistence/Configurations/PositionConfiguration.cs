@@ -30,6 +30,11 @@ public sealed class PositionConfiguration : IEntityTypeConfiguration<Position>
             .HasForeignKey(p => p.DepartmentId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        builder.HasOne(p => p.Grade)
+            .WithMany(g => g.Positions)
+            .HasForeignKey(p => p.GradeId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         builder.Ignore(p => p.DomainEvents);
     }
 }
