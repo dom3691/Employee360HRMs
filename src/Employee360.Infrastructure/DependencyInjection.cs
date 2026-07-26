@@ -1,3 +1,11 @@
+using Employee360.Domain.Interfaces;
+using Employee360.Domain.Interfaces.Repositories;
+using Employee360.Infrastructure.Identity;
+using Employee360.Infrastructure.Persistence;
+using Employee360.Infrastructure.Persistence.Interceptors;
+using Employee360.Infrastructure.Persistence.Repositories;
+using Employee360.Infrastructure.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -21,18 +29,37 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         // ---------------------------------------------------------------
-        // Persistence (Batch 2): DbContext, interceptors, repositories
+        // Cross-cutting services
         // ---------------------------------------------------------------
-        // services.AddDbContext<Employee360DbContext>(options =>
-        //     options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 
         // ---------------------------------------------------------------
-        // Identity & JWT (Batch 3): token service, password hasher
+        // Persistence: DbContext (+ audit interceptor), repositories, UoW
+        // ---------------------------------------------------------------
+        services.AddScoped<AuditableEntityInterceptor>();
+
+        services.AddDbContext<Employee360DbContext>((serviceProvider, options) =>
+        {
+            options.UseSqlServer(
+                configuration.GetConnectionString("DefaultConnection"),
+                sqlOptions => sqlOptions.EnableRetryOnFailure(maxRetryCount: 3));
+
+            options.AddInterceptors(
+                serviceProvider.GetRequiredService<AuditableEntityInterceptor>());
+        });
+
+        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<Employee360DbContext>());
+        services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+
+        // ---------------------------------------------------------------
+        // Identity & JWT (Batch 4+): token service, password hasher
         // ---------------------------------------------------------------
         // services.AddScoped<IJwtTokenService, JwtTokenService>();
 
         // ---------------------------------------------------------------
-        // Background jobs (Batch 3+): Hangfire server + SQL storage
+        // Background jobs (later batches): Hangfire server + SQL storage
         // ---------------------------------------------------------------
         // services.AddHangfire(cfg => cfg.UseSqlServerStorage(
         //     configuration.GetConnectionString("HangfireConnection")));
