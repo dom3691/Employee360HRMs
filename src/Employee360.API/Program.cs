@@ -1,6 +1,7 @@
 using Employee360.API.Middleware;
 using Employee360.Application;
 using Employee360.Infrastructure;
+using Hangfire;
 using Microsoft.OpenApi.Models;
 using Serilog;
 
@@ -106,10 +107,10 @@ try
     });
 
     // =======================================================================
-    // 7. BACKGROUND JOBS — Hangfire dashboard & recurring jobs
-    //    (server + storage registered in Infrastructure from Batch 3)
+    // 7. BACKGROUND JOBS — Hangfire server/storage registered in
+    //    AddInfrastructure when "Hangfire:Enabled" is true.
     // =======================================================================
-    // builder.Services.AddHangfireDashboardAuthorization();
+    var hangfireEnabled = builder.Configuration.GetValue("Hangfire:Enabled", defaultValue: false);
 
     var app = builder.Build();
 
@@ -136,7 +137,22 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
 
-    // app.UseHangfireDashboard("/hangfire");   // later batch
+    if (hangfireEnabled)
+    {
+        app.UseHangfireDashboard(
+            app.Configuration.GetValue("Hangfire:DashboardPath", "/hangfire"));
+
+        // Recurring leave jobs (FR-LV-002 accrual, FR-LV-009 escalation).
+        RecurringJob.AddOrUpdate<Employee360.Infrastructure.BackgroundJobs.LeaveAccrualJob>(
+            "leave-accrual",
+            job => job.RunAsync(CancellationToken.None),
+            Cron.Daily(2)); // 02:00 daily
+
+        RecurringJob.AddOrUpdate<Employee360.Infrastructure.BackgroundJobs.LeaveEscalationJob>(
+            "leave-escalation",
+            job => job.RunAsync(CancellationToken.None),
+            Cron.Hourly());
+    }
 
     app.MapControllers();
 
