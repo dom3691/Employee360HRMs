@@ -22,8 +22,26 @@ public class Employee360DbContext : DbContext, IUnitOfWork, IApplicationDbContex
     /// <summary>Immutable audit trail rows (written by the audit interceptor).</summary>
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
-    /// <summary>Employee records (minimal shape; expanded by the Batch 5 slices).</summary>
+    /// <summary>Employee master records.</summary>
     public DbSet<Employee> Employees => Set<Employee>();
+
+    /// <summary>Departments.</summary>
+    public DbSet<Department> Departments => Set<Department>();
+
+    /// <summary>Positions / job titles.</summary>
+    public DbSet<Position> Positions => Set<Position>();
+
+    /// <summary>Employee payroll bank accounts.</summary>
+    public DbSet<EmployeeBankAccount> EmployeeBankAccounts => Set<EmployeeBankAccount>();
+
+    /// <summary>Emergency contacts / next of kin.</summary>
+    public DbSet<EmployeeContact> EmployeeContacts => Set<EmployeeContact>();
+
+    /// <summary>Employee document metadata.</summary>
+    public DbSet<EmployeeDocument> EmployeeDocuments => Set<EmployeeDocument>();
+
+    /// <summary>Profile change requests awaiting HR review.</summary>
+    public DbSet<ProfileChangeRequest> ProfileChangeRequests => Set<ProfileChangeRequest>();
 
     /// <summary>Authentication accounts.</summary>
     public DbSet<User> Users => Set<User>();
@@ -48,8 +66,7 @@ public class Employee360DbContext : DbContext, IUnitOfWork, IApplicationDbContex
 
     // -----------------------------------------------------------------------
     // DbSets grow batch by batch:
-    //   Batch 5+: Departments, Positions, Grades, EmployeeDocuments
-    //   Batch 6+: LeaveTypes, LeavePolicies, LeaveBalances, LeaveRequests
+    //   Batch 7+: LeaveTypes, LeavePolicies, LeaveBalances, LeaveRequests
     //   Phase 2:  AttendanceRecords, Shifts, PayrollRuns, Payslips
     // -----------------------------------------------------------------------
 

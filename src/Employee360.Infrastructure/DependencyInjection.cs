@@ -8,8 +8,10 @@ using Employee360.Infrastructure.Persistence;
 using Employee360.Infrastructure.Persistence.Interceptors;
 using Employee360.Infrastructure.Persistence.Repositories;
 using Employee360.Infrastructure.Persistence.Seeding;
+using Employee360.Application.Common.Models;
 using Employee360.Infrastructure.Services;
 using Employee360.Infrastructure.Services.Email;
+using Employee360.Infrastructure.Services.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -42,6 +44,10 @@ public static class DependencyInjection
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
+        services.AddSingleton<IEncryptionService, AesEncryptionService>();
+
+        // Employee module settings (code format, FR-EMP-001).
+        services.Configure<EmployeeSettings>(configuration.GetSection(EmployeeSettings.SectionName));
 
         // ---------------------------------------------------------------
         // Persistence: DbContext (+ audit interceptor), repositories, UoW
@@ -86,9 +92,10 @@ public static class DependencyInjection
         // services.AddHangfireServer();
 
         // ---------------------------------------------------------------
-        // External services (later batches): Azure Blob storage
+        // File storage: Azure Blob (employee documents, payslips)
         // ---------------------------------------------------------------
-        // services.AddScoped<IFileStorageService, AzureBlobStorageService>();
+        services.Configure<BlobStorageSettings>(configuration.GetSection(BlobStorageSettings.SectionName));
+        services.AddScoped<IFileStorageService, AzureBlobStorageService>();
 
         return services;
     }
