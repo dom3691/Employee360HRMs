@@ -24,8 +24,11 @@ public interface IJwtTokenService
         IEnumerable<string> roles,
         IEnumerable<string> permissions);
 
-    /// <summary>Generates a cryptographically random opaque refresh token value.</summary>
-    string GenerateRefreshToken();
+    /// <summary>
+    /// Generates a cryptographically random opaque refresh token with its expiry
+    /// (lifetime from configuration).
+    /// </summary>
+    RefreshTokenResult GenerateRefreshToken();
 
     /// <summary>
     /// Validates an access token's signature/issuer/audience while IGNORING expiry,
