@@ -1,4 +1,5 @@
 using System.Reflection;
+using Employee360.Application.Common.Interfaces;
 using Employee360.Domain.Entities;
 using Employee360.Domain.Interfaces.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +12,7 @@ namespace Employee360.Infrastructure.Persistence;
 /// commits them atomically. Audit columns, soft deletes, and audit-log rows are
 /// applied by <see cref="Interceptors.AuditableEntityInterceptor"/>.
 /// </summary>
-public class Employee360DbContext : DbContext, IUnitOfWork
+public class Employee360DbContext : DbContext, IUnitOfWork, IApplicationDbContext
 {
     public Employee360DbContext(DbContextOptions<Employee360DbContext> options)
         : base(options)
@@ -41,6 +42,9 @@ public class Employee360DbContext : DbContext, IUnitOfWork
 
     /// <summary>Issued refresh tokens.</summary>
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
+    /// <summary>Password reset tokens.</summary>
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 
     // -----------------------------------------------------------------------
     // DbSets grow batch by batch:

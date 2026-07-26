@@ -73,10 +73,13 @@ public sealed class JwtTokenService : IJwtTokenService
     }
 
     /// <inheritdoc />
-    public string GenerateRefreshToken()
+    public RefreshTokenResult GenerateRefreshToken()
     {
         var bytes = RandomNumberGenerator.GetBytes(64);
-        return Convert.ToBase64String(bytes);
+
+        return new RefreshTokenResult(
+            Convert.ToBase64String(bytes),
+            _dateTimeProvider.UtcNow.AddDays(_settings.RefreshTokenExpiryDays));
     }
 
     /// <inheritdoc />
