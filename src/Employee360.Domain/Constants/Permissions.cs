@@ -36,6 +36,13 @@ public static class Permissions
         public const string Manage = "Positions.Manage";
     }
 
+    /// <summary>Salary grades / levels (PRD data model: Grade).</summary>
+    public static class Grades
+    {
+        public const string View = "Grades.View";
+        public const string Manage = "Grades.Manage";
+    }
+
     /// <summary>Employee documents (PRD FR-EMP-007).</summary>
     public static class Documents
     {
