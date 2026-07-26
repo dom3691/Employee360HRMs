@@ -4,6 +4,7 @@ using Employee360.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Employee360.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(Employee360DbContext))]
-    partial class Employee360DbContextModelSnapshot : ModelSnapshot
+    [Migration("20260726181344_AddIdentityAndRbac")]
+    partial class AddIdentityAndRbac
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

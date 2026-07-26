@@ -1,3 +1,4 @@
+using Employee360.Domain.Common;
 using FluentValidation;
 using MediatR;
 
@@ -5,9 +6,14 @@ namespace Employee360.Application.Common.Behaviours;
 
 /// <summary>
 /// MediatR pipeline behaviour that runs all registered FluentValidation validators
-/// for the incoming request before it reaches its handler.
-/// Throws <see cref="ValidationException"/> when validation fails; the API layer
-/// translates this into an RFC 7807 Problem Details response (HTTP 400).
+/// before the handler executes. When validation fails:
+/// <list type="bullet">
+/// <item>Handlers returning <see cref="Result"/> / <see cref="Result{T}"/> receive a
+/// failed result carrying the error messages (business-rule convention).</item>
+/// <item>Any other response type falls back to throwing
+/// <see cref="ValidationException"/>, which the API middleware translates into an
+/// RFC 7807 response (HTTP 400).</item>
+/// </list>
 /// </summary>
 /// <typeparam name="TRequest">The MediatR request type.</typeparam>
 /// <typeparam name="TResponse">The handler response type.</typeparam>
@@ -27,24 +33,57 @@ public sealed class ValidationBehaviour<TRequest, TResponse> : IPipelineBehavior
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
-        if (_validators.Any())
+        if (!_validators.Any())
         {
-            var context = new ValidationContext<TRequest>(request);
-
-            var validationResults = await Task.WhenAll(
-                _validators.Select(v => v.ValidateAsync(context, cancellationToken)));
-
-            var failures = validationResults
-                .Where(r => !r.IsValid)
-                .SelectMany(r => r.Errors)
-                .ToList();
-
-            if (failures.Count != 0)
-            {
-                throw new ValidationException(failures);
-            }
+            return await next();
         }
 
-        return await next();
+        var context = new ValidationContext<TRequest>(request);
+
+        var validationResults = await Task.WhenAll(
+            _validators.Select(v => v.ValidateAsync(context, cancellationToken)));
+
+        var failures = validationResults
+            .Where(r => !r.IsValid)
+            .SelectMany(r => r.Errors)
+            .ToList();
+
+        if (failures.Count == 0)
+        {
+            return await next();
+        }
+
+        var errors = failures.Select(f => f.ErrorMessage).Distinct().ToArray();
+
+        if (TryCreateFailureResult(errors, out var failureResult))
+        {
+            return failureResult;
+        }
+
+        throw new ValidationException(failures);
+    }
+
+    private static bool TryCreateFailureResult(string[] errors, out TResponse result)
+    {
+        var responseType = typeof(TResponse);
+
+        if (responseType == typeof(Result))
+        {
+            result = (TResponse)(object)Result.Failure(errors);
+            return true;
+        }
+
+        if (responseType.IsGenericType && responseType.GetGenericTypeDefinition() == typeof(Result<>))
+        {
+            var failureMethod = responseType.GetMethod(
+                nameof(Result.Failure),
+                [typeof(string[])])!;
+
+            result = (TResponse)failureMethod.Invoke(null, [errors])!;
+            return true;
+        }
+
+        result = default!;
+        return false;
     }
 }

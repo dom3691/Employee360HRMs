@@ -34,11 +34,10 @@ try
     builder.Services.AddInfrastructure(builder.Configuration);
 
     // =======================================================================
-    // 3. AUTHENTICATION & AUTHORIZATION — JWT Bearer + RBAC policies
-    //    (wired in Batch 3; placeholder kept here so ordering is stable)
+    // 3. AUTHENTICATION & AUTHORIZATION — JWT Bearer + granular RBAC policies
     // =======================================================================
-    // builder.Services.AddJwtAuthentication(builder.Configuration);
-    // builder.Services.AddPermissionAuthorization();
+    builder.Services.AddJwtAuthentication(builder.Configuration);
+    builder.Services.AddPermissionAuthorization();
 
     // =======================================================================
     // 4. API — Controllers, versioned routes, JSON options
@@ -134,12 +133,15 @@ try
 
     app.UseCors(CorsPolicyName);
 
-    // app.UseAuthentication();   // Batch 3
+    app.UseAuthentication();
     app.UseAuthorization();
 
-    // app.UseHangfireDashboard("/hangfire");   // Batch 3+
+    // app.UseHangfireDashboard("/hangfire");   // later batch
 
     app.MapControllers();
+
+    // Seed data (roles, permission catalog, RBAC matrix) runs in the background
+    // via DataSeedHostedService, registered in AddInfrastructure.
 
     app.Run();
 }
