@@ -9,6 +9,7 @@ using Employee360.Infrastructure.Persistence.Interceptors;
 using Employee360.Infrastructure.Persistence.Repositories;
 using Employee360.Infrastructure.Persistence.Seeding;
 using Employee360.Infrastructure.Services;
+using Employee360.Infrastructure.Services.Email;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -58,6 +59,7 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<Employee360DbContext>());
+        services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<Employee360DbContext>());
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
         // ---------------------------------------------------------------
@@ -65,7 +67,12 @@ public static class DependencyInjection
         // ---------------------------------------------------------------
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
         services.AddScoped<IJwtTokenService, JwtTokenService>();
+        services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IManagerScopeService, ManagerScopeService>();
+
+        // Outbound email (SMTP; PRD Integration requirements).
+        services.Configure<EmailSettings>(configuration.GetSection(EmailSettings.SectionName));
+        services.AddScoped<IEmailService, SmtpEmailService>();
 
         // Seed data: roles, permission catalog, RBAC matrix (idempotent, background).
         services.AddScoped<IDataSeeder, IdentityDataSeeder>();
@@ -79,9 +86,8 @@ public static class DependencyInjection
         // services.AddHangfireServer();
 
         // ---------------------------------------------------------------
-        // External services (later batches): SMTP email, Azure Blob storage
+        // External services (later batches): Azure Blob storage
         // ---------------------------------------------------------------
-        // services.AddScoped<IEmailService, SmtpEmailService>();
         // services.AddScoped<IFileStorageService, AzureBlobStorageService>();
 
         return services;

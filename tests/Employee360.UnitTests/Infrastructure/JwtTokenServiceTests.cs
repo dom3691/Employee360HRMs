@@ -66,14 +66,15 @@ public class JwtTokenServiceTests
     }
 
     [Fact]
-    public void GenerateRefreshToken_ShouldBeUniqueAndHighEntropy()
+    public void GenerateRefreshToken_ShouldBeUniqueHighEntropy_WithConfiguredExpiry()
     {
         var service = CreateService();
 
         var tokens = Enumerable.Range(0, 50).Select(_ => service.GenerateRefreshToken()).ToList();
 
-        tokens.Should().OnlyHaveUniqueItems();
-        Convert.FromBase64String(tokens[0]).Should().HaveCount(64);
+        tokens.Select(t => t.Token).Should().OnlyHaveUniqueItems();
+        Convert.FromBase64String(tokens[0].Token).Should().HaveCount(64);
+        tokens[0].ExpiresAtUtc.Should().BeCloseTo(DateTime.UtcNow.AddDays(7), TimeSpan.FromSeconds(5));
     }
 
     [Fact]
