@@ -13,6 +13,24 @@ public interface IApplicationDbContext
     /// <summary>Employee records.</summary>
     DbSet<Employee> Employees { get; }
 
+    /// <summary>Departments.</summary>
+    DbSet<Department> Departments { get; }
+
+    /// <summary>Positions / job titles.</summary>
+    DbSet<Position> Positions { get; }
+
+    /// <summary>Employee payroll bank accounts.</summary>
+    DbSet<EmployeeBankAccount> EmployeeBankAccounts { get; }
+
+    /// <summary>Emergency contacts / next of kin.</summary>
+    DbSet<EmployeeContact> EmployeeContacts { get; }
+
+    /// <summary>Employee document metadata.</summary>
+    DbSet<EmployeeDocument> EmployeeDocuments { get; }
+
+    /// <summary>Profile change requests awaiting HR review.</summary>
+    DbSet<ProfileChangeRequest> ProfileChangeRequests { get; }
+
     /// <summary>Authentication accounts.</summary>
     DbSet<User> Users { get; }
 
