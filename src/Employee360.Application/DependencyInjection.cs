@@ -25,6 +25,9 @@ public static class DependencyInjection
         services.AddValidatorsFromAssembly(assembly);
         services.AddAutoMapper(assembly);
 
+        // Pipeline order (outermost first): exception safety net -> logging -> validation.
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(UnhandledExceptionBehaviour<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehaviour<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
 
         return services;

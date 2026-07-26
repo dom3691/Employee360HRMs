@@ -1,13 +1,20 @@
+using System.Text;
+using Employee360.Application.Common.Interfaces;
 using Employee360.Domain.Interfaces;
 using Employee360.Domain.Interfaces.Repositories;
 using Employee360.Infrastructure.Identity;
+using Employee360.Infrastructure.Identity.Authorization;
 using Employee360.Infrastructure.Persistence;
 using Employee360.Infrastructure.Persistence.Interceptors;
 using Employee360.Infrastructure.Persistence.Repositories;
+using Employee360.Infrastructure.Persistence.Seeding;
 using Employee360.Infrastructure.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Employee360.Infrastructure;
 
@@ -54,9 +61,15 @@ public static class DependencyInjection
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
         // ---------------------------------------------------------------
-        // Identity & JWT (Batch 4+): token service, password hasher
+        // Identity: JWT token service, manager scoping, seed data
         // ---------------------------------------------------------------
-        // services.AddScoped<IJwtTokenService, JwtTokenService>();
+        services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
+        services.AddScoped<IJwtTokenService, JwtTokenService>();
+        services.AddScoped<IManagerScopeService, ManagerScopeService>();
+
+        // Seed data: roles, permission catalog, RBAC matrix (idempotent, background).
+        services.AddScoped<IDataSeeder, IdentityDataSeeder>();
+        services.AddHostedService<DataSeedHostedService>();
 
         // ---------------------------------------------------------------
         // Background jobs (later batches): Hangfire server + SQL storage
@@ -70,6 +83,60 @@ public static class DependencyInjection
         // ---------------------------------------------------------------
         // services.AddScoped<IEmailService, SmtpEmailService>();
         // services.AddScoped<IFileStorageService, AzureBlobStorageService>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Configures JWT bearer authentication from the "Jwt" configuration section
+    /// (FR-AUTH-001, NFR-SEC-003).
+    /// </summary>
+    /// <param name="services">The service collection to register into.</param>
+    /// <param name="configuration">Application configuration.</param>
+    /// <returns>The same service collection, for chaining.</returns>
+    public static IServiceCollection AddJwtAuthentication(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var jwtSettings = configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
+            ?? throw new InvalidOperationException("Missing 'Jwt' configuration section.");
+
+        services
+            .AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = jwtSettings.Issuer,
+                    ValidateAudience = true,
+                    ValidAudience = jwtSettings.Audience,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(jwtSettings.SigningKey)),
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.FromMinutes(1),
+                };
+            });
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the dynamic permission-based authorization pipeline
+    /// ([HasPermission] attribute + policy provider + claims handler, FR-AUTH-006/007).
+    /// </summary>
+    /// <param name="services">The service collection to register into.</param>
+    /// <returns>The same service collection, for chaining.</returns>
+    public static IServiceCollection AddPermissionAuthorization(this IServiceCollection services)
+    {
+        services.AddAuthorization();
+        services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+        services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
         return services;
     }
