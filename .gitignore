@@ -1,0 +1,43 @@
+# Build outputs
+bin/
+obj/
+out/
+publish/
+
+# User-specific
+*.user
+*.suo
+.vs/
+.vscode/
+*.swp
+
+# Rider / ReSharper
+.idea/
+*.DotSettings.user
+
+# Test results & coverage
+TestResults/
+coverage/
+*.trx
+*.coverage
+coverlet.json
+
+# NuGet
+*.nupkg
+packages/
+
+# Local secrets — never commit real credentials
+appsettings.Local.json
+secrets.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (Angular frontend, later)
+node_modules/
+dist/
+
+# Python (doc generation)
+__pycache__/
+*.pyc
