@@ -13,6 +13,11 @@
     <ProjectReference Include="..\Employee360.Domain\Employee360.Domain.csproj" />
   </ItemGroup>
 
+  <!-- Needed for IHttpContextAccessor (CurrentUserService) and JWT bearer wiring. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Azure.Storage.Blobs" Version="12.29.1" />
     <PackageReference Include="Hangfire.Core" Version="1.8.24" />
