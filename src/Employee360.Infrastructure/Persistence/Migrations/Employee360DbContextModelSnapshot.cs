@@ -22,6 +22,71 @@ namespace Employee360.Infrastructure.Persistence.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Employee360.Domain.Entities.AttendanceRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ClockIn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ClockOut")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CorrectionReason")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<string>("DeviceId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("OvertimeMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("ShiftId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SourceIp")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ShiftId");
+
+                    b.HasIndex("EmployeeId", "Date")
+                        .IsUnique()
+                        .HasDatabaseName("IX_AttendanceRecords_EmployeeId_Date");
+
+                    b.ToTable("AttendanceRecords", (string)null);
+                });
+
             modelBuilder.Entity("Employee360.Domain.Entities.AuditLog", b =>
                 {
                     b.Property<Guid>("Id")
@@ -69,6 +134,113 @@ namespace Employee360.Infrastructure.Persistence.Migrations
                     b.ToTable("AuditLogs", (string)null);
                 });
 
+            modelBuilder.Entity("Employee360.Domain.Entities.Candidate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<Guid?>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("JobPostingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("ResumePath")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<int>("Stage")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("JobPostingId", "Email")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Candidates_JobPostingId_Email");
+
+                    b.ToTable("Candidates", (string)null);
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.Company", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DefaultCurrency")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)")
+                        .HasDefaultValue("NGN");
+
+                    b.Property<string>("LogoUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("RCNumber")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("TIN")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Companies", (string)null);
+                });
+
             modelBuilder.Entity("Employee360.Domain.Entities.Department", b =>
                 {
                     b.Property<Guid>("Id")
@@ -109,6 +281,9 @@ namespace Employee360.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("ParentDepartmentId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("ShiftId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Code")
@@ -119,7 +294,58 @@ namespace Employee360.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ParentDepartmentId");
 
+                    b.HasIndex("ShiftId");
+
                     b.ToTable("Departments", (string)null);
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.EmailTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BodyHtml")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("IX_EmailTemplates_Code");
+
+                    b.ToTable("EmailTemplates", (string)null);
                 });
 
             modelBuilder.Entity("Employee360.Domain.Entities.Employee", b =>
@@ -209,6 +435,14 @@ namespace Employee360.Infrastructure.Persistence.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<string>("PensionPin")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("PfaName")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
                     b.Property<string>("PhoneNumber")
                         .HasMaxLength(32)
                         .HasColumnType("nvarchar(32)");
@@ -263,6 +497,10 @@ namespace Employee360.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("BankCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
 
                     b.Property<string>("BankName")
                         .IsRequired()
@@ -410,6 +648,116 @@ namespace Employee360.Infrastructure.Persistence.Migrations
                     b.ToTable("EmployeeDocuments", (string)null);
                 });
 
+            modelBuilder.Entity("Employee360.Domain.Entities.EmployeeGoal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("ActualValue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("ReviewCycleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("TargetValue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<decimal>("Weight")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("ReviewCycleId", "EmployeeId", "Title")
+                        .HasDatabaseName("IX_EmployeeGoals_Cycle_Employee_Title");
+
+                    b.ToTable("EmployeeGoals", (string)null);
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.EmployeeSalary", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Basic")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateOnly>("EffectiveDate")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly?>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("Housing")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("OtherAllowances")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("SalaryStructureId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Transport")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SalaryStructureId");
+
+                    b.HasIndex("EmployeeId", "EffectiveDate")
+                        .HasDatabaseName("IX_EmployeeSalaries_EmployeeId_EffectiveDate");
+
+                    b.ToTable("EmployeeSalaries", (string)null);
+                });
+
             modelBuilder.Entity("Employee360.Domain.Entities.Grade", b =>
                 {
                     b.Property<Guid>("Id")
@@ -461,6 +809,52 @@ namespace Employee360.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("IX_Grades_Name");
 
                     b.ToTable("Grades", (string)null);
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.JobPosting", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly?>("ClosingDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DepartmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("IX_JobPostings_Status");
+
+                    b.ToTable("JobPostings", (string)null);
                 });
 
             modelBuilder.Entity("Employee360.Domain.Entities.LeaveApproval", b =>
@@ -766,6 +1160,54 @@ namespace Employee360.Infrastructure.Persistence.Migrations
                     b.ToTable("Notifications", (string)null);
                 });
 
+            modelBuilder.Entity("Employee360.Domain.Entities.OnboardingTask", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AssignedToEmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateOnly>("DueDate")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsCompleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TaskName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedToEmployeeId");
+
+                    b.HasIndex("EmployeeId")
+                        .HasDatabaseName("IX_OnboardingTasks_EmployeeId");
+
+                    b.ToTable("OnboardingTasks", (string)null);
+                });
+
             modelBuilder.Entity("Employee360.Domain.Entities.PasswordResetToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -799,6 +1241,429 @@ namespace Employee360.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("IX_PasswordResetTokens_UserId");
 
                     b.ToTable("PasswordResetTokens", (string)null);
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.PayrollDeduction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("DeductionType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly?>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<decimal?>("FixedAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsRecurring")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<decimal?>("PercentOfGross")
+                        .HasPrecision(8, 6)
+                        .HasColumnType("decimal(8,6)");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.ToTable("PayrollDeductions", (string)null);
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.PayrollRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ApprovedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ApprovedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CalculationJobId")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("FinalizedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateOnly>("PeriodEnd")
+                        .HasColumnType("date");
+
+                    b.Property<string>("PeriodLabel")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int>("PeriodMonth")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly>("PeriodStart")
+                        .HasColumnType("date");
+
+                    b.Property<int>("PeriodYear")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProcessedEmployees")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("RunByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("SubmittedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("TaxYear")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalEmployees")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PeriodYear", "PeriodMonth")
+                        .IsUnique()
+                        .HasDatabaseName("IX_PayrollRuns_PeriodYear_PeriodMonth");
+
+                    b.ToTable("PayrollRuns", (string)null);
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.PayrollStatutoryRate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Basis")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("EmployeeRate")
+                        .HasPrecision(8, 6)
+                        .HasColumnType("decimal(8,6)");
+
+                    b.Property<decimal?>("EmployerRate")
+                        .HasPrecision(8, 6)
+                        .HasColumnType("decimal(8,6)");
+
+                    b.Property<decimal?>("FixedAnnualAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<int>("TaxYear")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("VariableRate")
+                        .HasPrecision(8, 6)
+                        .HasColumnType("decimal(8,6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TaxYear", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("IX_PayrollStatutoryRates_TaxYear_Code");
+
+                    b.ToTable("PayrollStatutoryRates", (string)null);
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.Payslip", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Basic")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("CraMonthly")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CustomDeductionsJson")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<decimal>("CustomDeductionsTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("EmployeeCode")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("EmployeeName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<decimal>("GrossPay")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Housing")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("NetPay")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Nhf")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("NsitfEmployer")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("OtherAllowances")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("PayFactor")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Paye")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("PayrollRunId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("PdfPath")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<decimal>("PensionEmployee")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("PensionEmployer")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Transport")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("PayrollRunId", "EmployeeId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Payslips_PayrollRunId_EmployeeId");
+
+                    b.ToTable("Payslips", (string)null);
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.PeerFeedback", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Comments")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("PerformanceReviewId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Rating")
+                        .HasPrecision(3, 2)
+                        .HasColumnType("decimal(3,2)");
+
+                    b.Property<Guid>("ReviewerEmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PerformanceReviewId", "ReviewerEmployeeId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_PeerFeedbacks_Review_Reviewer");
+
+                    b.ToTable("PeerFeedbacks", (string)null);
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.PerformanceReview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("FinalRating")
+                        .HasPrecision(3, 2)
+                        .HasColumnType("decimal(3,2)");
+
+                    b.Property<DateTime?>("FinalizedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ManagerComments")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("ManagerEmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("ManagerRating")
+                        .HasPrecision(3, 2)
+                        .HasColumnType("decimal(3,2)");
+
+                    b.Property<DateTime?>("ManagerSubmittedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("ReviewCycleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SelfComments")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("SelfRating")
+                        .HasPrecision(3, 2)
+                        .HasColumnType("decimal(3,2)");
+
+                    b.Property<DateTime?>("SelfSubmittedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("ManagerEmployeeId");
+
+                    b.HasIndex("ReviewCycleId", "EmployeeId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_PerformanceReviews_Cycle_Employee");
+
+                    b.ToTable("PerformanceReviews", (string)null);
                 });
 
             modelBuilder.Entity("Employee360.Domain.Entities.Permission", b =>
@@ -1012,6 +1877,62 @@ namespace Employee360.Infrastructure.Persistence.Migrations
                     b.ToTable("RefreshTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Employee360.Domain.Entities.ReviewCycle", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("GoalWeightPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal>("ManagerWeightPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<decimal>("PeerWeightPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal>("SelfWeightPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ReviewCycles", (string)null);
+                });
+
             modelBuilder.Entity("Employee360.Domain.Entities.Role", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1065,6 +1986,205 @@ namespace Employee360.Infrastructure.Persistence.Migrations
                     b.HasIndex("PermissionId");
 
                     b.ToTable("RolePermissions", (string)null);
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.SalaryStructure", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Basic")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("Housing")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<decimal>("OtherAllowances")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Transport")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("IX_SalaryStructures_Name");
+
+                    b.ToTable("SalaryStructures", (string)null);
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.Shift", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("BreakMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<TimeOnly>("EndTime")
+                        .HasColumnType("time");
+
+                    b.Property<int>("GraceMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<TimeOnly>("StartTime")
+                        .HasColumnType("time");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Shifts_Name");
+
+                    b.ToTable("Shifts", (string)null);
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.TaxBand", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("BandOrder")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Rate")
+                        .HasPrecision(8, 6)
+                        .HasColumnType("decimal(8,6)");
+
+                    b.Property<int>("TaxYear")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("UpperBoundAnnual")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TaxYear", "BandOrder")
+                        .IsUnique()
+                        .HasDatabaseName("IX_TaxBands_TaxYear_BandOrder");
+
+                    b.ToTable("TaxBands", (string)null);
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.Timesheet", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<string>("ReviewComments")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TotalHours")
+                        .HasPrecision(8, 2)
+                        .HasColumnType("decimal(8,2)");
+
+                    b.Property<DateOnly>("WeekStart")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId", "WeekStart")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Timesheets_EmployeeId_WeekStart");
+
+                    b.ToTable("Timesheets", (string)null);
                 });
 
             modelBuilder.Entity("Employee360.Domain.Entities.User", b =>
@@ -1145,6 +2265,42 @@ namespace Employee360.Infrastructure.Persistence.Migrations
                     b.ToTable("UserRoles", (string)null);
                 });
 
+            modelBuilder.Entity("Employee360.Domain.Entities.AttendanceRecord", b =>
+                {
+                    b.HasOne("Employee360.Domain.Entities.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Employee360.Domain.Entities.Shift", "Shift")
+                        .WithMany()
+                        .HasForeignKey("ShiftId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("Shift");
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.Candidate", b =>
+                {
+                    b.HasOne("Employee360.Domain.Entities.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Employee360.Domain.Entities.JobPosting", "JobPosting")
+                        .WithMany("Candidates")
+                        .HasForeignKey("JobPostingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("JobPosting");
+                });
+
             modelBuilder.Entity("Employee360.Domain.Entities.Department", b =>
                 {
                     b.HasOne("Employee360.Domain.Entities.Employee", "HeadEmployee")
@@ -1157,9 +2313,16 @@ namespace Employee360.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ParentDepartmentId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("Employee360.Domain.Entities.Shift", "Shift")
+                        .WithMany("Departments")
+                        .HasForeignKey("ShiftId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("HeadEmployee");
 
                     b.Navigation("ParentDepartment");
+
+                    b.Navigation("Shift");
                 });
 
             modelBuilder.Entity("Employee360.Domain.Entities.Employee", b =>
@@ -1217,6 +2380,52 @@ namespace Employee360.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.EmployeeGoal", b =>
+                {
+                    b.HasOne("Employee360.Domain.Entities.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Employee360.Domain.Entities.ReviewCycle", "ReviewCycle")
+                        .WithMany("Goals")
+                        .HasForeignKey("ReviewCycleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("ReviewCycle");
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.EmployeeSalary", b =>
+                {
+                    b.HasOne("Employee360.Domain.Entities.Employee", "Employee")
+                        .WithMany("Salaries")
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Employee360.Domain.Entities.SalaryStructure", "SalaryStructure")
+                        .WithMany("EmployeeSalaries")
+                        .HasForeignKey("SalaryStructureId");
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("SalaryStructure");
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.JobPosting", b =>
+                {
+                    b.HasOne("Employee360.Domain.Entities.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Department");
                 });
 
             modelBuilder.Entity("Employee360.Domain.Entities.LeaveApproval", b =>
@@ -1297,6 +2506,25 @@ namespace Employee360.Infrastructure.Persistence.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Employee360.Domain.Entities.OnboardingTask", b =>
+                {
+                    b.HasOne("Employee360.Domain.Entities.Employee", "AssignedToEmployee")
+                        .WithMany()
+                        .HasForeignKey("AssignedToEmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Employee360.Domain.Entities.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AssignedToEmployee");
+
+                    b.Navigation("Employee");
+                });
+
             modelBuilder.Entity("Employee360.Domain.Entities.PasswordResetToken", b =>
                 {
                     b.HasOne("Employee360.Domain.Entities.User", "User")
@@ -1306,6 +2534,73 @@ namespace Employee360.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.PayrollDeduction", b =>
+                {
+                    b.HasOne("Employee360.Domain.Entities.Employee", "Employee")
+                        .WithMany("PayrollDeductions")
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.Payslip", b =>
+                {
+                    b.HasOne("Employee360.Domain.Entities.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Employee360.Domain.Entities.PayrollRun", "PayrollRun")
+                        .WithMany("Payslips")
+                        .HasForeignKey("PayrollRunId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("PayrollRun");
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.PeerFeedback", b =>
+                {
+                    b.HasOne("Employee360.Domain.Entities.PerformanceReview", "PerformanceReview")
+                        .WithMany("PeerFeedbacks")
+                        .HasForeignKey("PerformanceReviewId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PerformanceReview");
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.PerformanceReview", b =>
+                {
+                    b.HasOne("Employee360.Domain.Entities.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Employee360.Domain.Entities.Employee", "ManagerEmployee")
+                        .WithMany()
+                        .HasForeignKey("ManagerEmployeeId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Employee360.Domain.Entities.ReviewCycle", "ReviewCycle")
+                        .WithMany("Reviews")
+                        .HasForeignKey("ReviewCycleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("ManagerEmployee");
+
+                    b.Navigation("ReviewCycle");
                 });
 
             modelBuilder.Entity("Employee360.Domain.Entities.Position", b =>
@@ -1366,6 +2661,17 @@ namespace Employee360.Infrastructure.Persistence.Migrations
                     b.Navigation("Role");
                 });
 
+            modelBuilder.Entity("Employee360.Domain.Entities.Timesheet", b =>
+                {
+                    b.HasOne("Employee360.Domain.Entities.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+                });
+
             modelBuilder.Entity("Employee360.Domain.Entities.User", b =>
                 {
                     b.HasOne("Employee360.Domain.Entities.Employee", "Employee")
@@ -1409,11 +2715,20 @@ namespace Employee360.Infrastructure.Persistence.Migrations
                     b.Navigation("DirectReports");
 
                     b.Navigation("Documents");
+
+                    b.Navigation("PayrollDeductions");
+
+                    b.Navigation("Salaries");
                 });
 
             modelBuilder.Entity("Employee360.Domain.Entities.Grade", b =>
                 {
                     b.Navigation("Positions");
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.JobPosting", b =>
+                {
+                    b.Navigation("Candidates");
                 });
 
             modelBuilder.Entity("Employee360.Domain.Entities.LeaveRequest", b =>
@@ -1426,6 +2741,16 @@ namespace Employee360.Infrastructure.Persistence.Migrations
                     b.Navigation("Policy");
                 });
 
+            modelBuilder.Entity("Employee360.Domain.Entities.PayrollRun", b =>
+                {
+                    b.Navigation("Payslips");
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.PerformanceReview", b =>
+                {
+                    b.Navigation("PeerFeedbacks");
+                });
+
             modelBuilder.Entity("Employee360.Domain.Entities.Permission", b =>
                 {
                     b.Navigation("RolePermissions");
@@ -1436,11 +2761,28 @@ namespace Employee360.Infrastructure.Persistence.Migrations
                     b.Navigation("Employees");
                 });
 
+            modelBuilder.Entity("Employee360.Domain.Entities.ReviewCycle", b =>
+                {
+                    b.Navigation("Goals");
+
+                    b.Navigation("Reviews");
+                });
+
             modelBuilder.Entity("Employee360.Domain.Entities.Role", b =>
                 {
                     b.Navigation("RolePermissions");
 
                     b.Navigation("UserRoles");
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.SalaryStructure", b =>
+                {
+                    b.Navigation("EmployeeSalaries");
+                });
+
+            modelBuilder.Entity("Employee360.Domain.Entities.Shift", b =>
+                {
+                    b.Navigation("Departments");
                 });
 
             modelBuilder.Entity("Employee360.Domain.Entities.User", b =>

@@ -24,6 +24,12 @@ public class Department : AuditableEntity, ISoftDelete
     /// <summary>Department head (FR-EMP-009), or null when unassigned.</summary>
     public Guid? HeadEmployeeId { get; set; }
 
+    /// <summary>Default work shift for department employees (FR-ATT-002).</summary>
+    public Guid? ShiftId { get; set; }
+
+    /// <summary>Navigation to the assigned shift.</summary>
+    public Shift? Shift { get; set; }
+
     /// <summary>Navigation to the department head.</summary>
     public Employee? HeadEmployee { get; set; }
 

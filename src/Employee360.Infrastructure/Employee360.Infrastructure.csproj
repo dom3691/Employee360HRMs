@@ -19,12 +19,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.Extensions.AspNetCore.Configuration.Secrets" Version="1.4.0" />
+    <PackageReference Include="Azure.Identity" Version="1.12.1" />
+    <PackageReference Include="Azure.Communication.Email" Version="1.0.1" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.29.1" />
+    <PackageReference Include="ClosedXML" Version="0.104.2" />
     <PackageReference Include="Hangfire.AspNetCore" Version="1.8.24" />
     <PackageReference Include="Hangfire.Core" Version="1.8.24" />
     <PackageReference Include="Hangfire.SqlServer" Version="1.8.24" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.*" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.*" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="8.0.*" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.*">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

@@ -17,6 +17,9 @@ public class EmployeeBankAccount : AuditableEntity
     /// <summary>Bank name, e.g. "GTBank".</summary>
     public string BankName { get; set; } = string.Empty;
 
+    /// <summary>NIBSS bank code for payment file export (FR-PAY-010).</summary>
+    public string? BankCode { get; set; }
+
     /// <summary>NUBAN account number — AES-256 encrypted at rest.</summary>
     public string AccountNumberEncrypted { get; set; } = string.Empty;
 

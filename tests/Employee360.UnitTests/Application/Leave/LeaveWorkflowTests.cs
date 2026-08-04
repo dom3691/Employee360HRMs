@@ -28,6 +28,7 @@ public class LeaveWorkflowTests
     private readonly Employee _employee;
     private readonly LeaveType _annualLeave;
     private readonly Mock<ILeaveNotifier> _notifier = new();
+    private readonly Mock<IAttendanceIntegrationService> _attendanceIntegration = new();
     private readonly Guid _managerUserId = Guid.NewGuid();
 
     public LeaveWorkflowTests()
@@ -112,7 +113,8 @@ public class LeaveWorkflowTests
         UserAs(approverEmployeeId, _managerUserId).Object,
         new ManagerScopeService(_context),
         Clock().Object,
-        _notifier.Object);
+        _notifier.Object,
+        _attendanceIntegration.Object);
 
     [Fact]
     public async Task Apply_WithSufficientBalance_ShouldReservePendingDays()

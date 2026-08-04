@@ -1,5 +1,6 @@
 using System.Text;
 using Employee360.Application.Common.Interfaces;
+using Employee360.Application.Common.Models;
 using Employee360.Domain.Interfaces;
 using Employee360.Domain.Interfaces.Repositories;
 using Employee360.Infrastructure.Identity;
@@ -8,11 +9,12 @@ using Employee360.Infrastructure.Persistence;
 using Employee360.Infrastructure.Persistence.Interceptors;
 using Employee360.Infrastructure.Persistence.Repositories;
 using Employee360.Infrastructure.Persistence.Seeding;
-using Employee360.Application.Common.Models;
 using Employee360.Infrastructure.BackgroundJobs;
 using Employee360.Infrastructure.Services;
 using Hangfire;
 using Employee360.Infrastructure.Services.Email;
+using Employee360.Infrastructure.Services.Payroll;
+using Employee360.Infrastructure.Services.Reports;
 using Employee360.Infrastructure.Services.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -54,6 +56,12 @@ public static class DependencyInjection
         // Leave module settings (escalation SLA, FR-LV-009).
         services.Configure<LeaveSettings>(configuration.GetSection(LeaveSettings.SectionName));
 
+        // Attendance module settings (FR-ATT-003, FR-ATT-005, FR-ATT-007).
+        services.Configure<AttendanceSettings>(configuration.GetSection(AttendanceSettings.SectionName));
+
+        // Payroll module settings (FR-PAY-010, FR-PAY-012).
+        services.Configure<PayrollSettings>(configuration.GetSection(PayrollSettings.SectionName));
+
         // ---------------------------------------------------------------
         // Persistence: DbContext (+ audit interceptor), repositories, UoW
         // ---------------------------------------------------------------
@@ -81,12 +89,28 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IManagerScopeService, ManagerScopeService>();
 
-        // Outbound email (SMTP; PRD Integration requirements).
+        // Outbound email (SMTP or Azure Communication Services; queued via Hangfire).
         services.Configure<EmailSettings>(configuration.GetSection(EmailSettings.SectionName));
-        services.AddScoped<IEmailService, SmtpEmailService>();
+        services.Configure<AzureCommunicationEmailSettings>(
+            configuration.GetSection(AzureCommunicationEmailSettings.SectionName));
+
+        services.AddScoped<SmtpEmailService>();
+        services.AddScoped<AzureCommunicationEmailService>();
+        services.AddScoped<IEmailSender>(sp =>
+        {
+            var provider = configuration.GetValue<string>("Email:Provider") ?? "Smtp";
+            return provider.Equals("AzureCommunicationServices", StringComparison.OrdinalIgnoreCase)
+                ? sp.GetRequiredService<AzureCommunicationEmailService>()
+                : sp.GetRequiredService<SmtpEmailService>();
+        });
+        services.AddScoped<EmailSendJob>();
+        services.AddScoped<IEmailService, QueuedEmailService>();
 
         // Seed data: roles, permission catalog, RBAC matrix (idempotent, background).
         services.AddScoped<IDataSeeder, IdentityDataSeeder>();
+        services.AddScoped<IDataSeeder, CompanyConfigurationSeeder>();
+        services.AddScoped<IDataSeeder, PayrollConfigSeeder>();
+        services.AddScoped<IDataSeeder, DemoDataSeeder>();
         services.AddHostedService<DataSeedHostedService>();
 
         // ---------------------------------------------------------------
@@ -96,6 +120,8 @@ public static class DependencyInjection
         // ---------------------------------------------------------------
         services.AddScoped<LeaveAccrualJob>();
         services.AddScoped<LeaveEscalationJob>();
+        services.AddScoped<DailyStatusCalculationJob>();
+        services.AddScoped<CalculatePayrollJob>();
 
         if (configuration.GetValue("Hangfire:Enabled", defaultValue: false))
         {
@@ -116,6 +142,12 @@ public static class DependencyInjection
         // ---------------------------------------------------------------
         services.Configure<BlobStorageSettings>(configuration.GetSection(BlobStorageSettings.SectionName));
         services.AddScoped<IFileStorageService, AzureBlobStorageService>();
+        services.AddScoped<IPayslipStorageService, PayslipStorageService>();
+        services.AddScoped<IPayrollCalculationJobScheduler, HangfirePayrollCalculationJobScheduler>();
+
+        // Report export (FR-RPT CSV/Excel).
+        services.AddSingleton<ICsvExporter, CsvExporter>();
+        services.AddSingleton<IExcelExporter, ExcelExporter>();
 
         return services;
     }

@@ -35,6 +35,11 @@ public sealed class DepartmentConfiguration : IEntityTypeConfiguration<Departmen
             .HasForeignKey(d => d.HeadEmployeeId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        builder.HasOne(d => d.Shift)
+            .WithMany(s => s.Departments)
+            .HasForeignKey(d => d.ShiftId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         builder.Ignore(d => d.DomainEvents);
     }
 }

@@ -79,8 +79,20 @@ public class Employee : AuditableEntity, ISoftDelete
     /// <summary>Lifecycle status (PRD FR-EMP-004).</summary>
     public EmployeeStatus Status { get; set; } = EmployeeStatus.Draft;
 
+    /// <summary>Pension PIN issued by PFA (FR-PAY-013).</summary>
+    public string? PensionPin { get; set; }
+
+    /// <summary>Pension Fund Administrator name (FR-PAY-013).</summary>
+    public string? PfaName { get; set; }
+
     /// <summary>Bank account for payroll (FR-EMP-014), 1:1.</summary>
     public EmployeeBankAccount? BankAccount { get; set; }
+
+    /// <summary>Salary assignment history (FR-PAY-002).</summary>
+    public ICollection<EmployeeSalary> Salaries { get; set; } = new List<EmployeeSalary>();
+
+    /// <summary>Custom payroll deductions (FR-PAY-007).</summary>
+    public ICollection<PayrollDeduction> PayrollDeductions { get; set; } = new List<PayrollDeduction>();
 
     /// <summary>Emergency contact and next of kin (FR-EMP-013).</summary>
     public ICollection<EmployeeContact> Contacts { get; set; } = new List<EmployeeContact>();

@@ -79,6 +79,63 @@ public interface IApplicationDbContext
     /// <summary>Immutable audit trail rows.</summary>
     DbSet<AuditLog> AuditLogs { get; }
 
+    /// <summary>Organization company profile (singleton).</summary>
+    DbSet<Company> Companies { get; }
+
+    /// <summary>Configurable workflow email templates.</summary>
+    DbSet<EmailTemplate> EmailTemplates { get; }
+
+    /// <summary>Work shift definitions.</summary>
+    DbSet<Shift> Shifts { get; }
+
+    /// <summary>Daily attendance records.</summary>
+    DbSet<AttendanceRecord> AttendanceRecords { get; }
+
+    /// <summary>Weekly timesheets for non-shift staff.</summary>
+    DbSet<Timesheet> Timesheets { get; }
+
+    /// <summary>Salary structure templates (FR-PAY-001).</summary>
+    DbSet<SalaryStructure> SalaryStructures { get; }
+
+    /// <summary>Employee salary assignments (FR-PAY-002).</summary>
+    DbSet<EmployeeSalary> EmployeeSalaries { get; }
+
+    /// <summary>Configurable PAYE tax bands (FR-PAY-003).</summary>
+    DbSet<TaxBand> TaxBands { get; }
+
+    /// <summary>Statutory rate configuration (FR-PAY-004..006).</summary>
+    DbSet<PayrollStatutoryRate> PayrollStatutoryRates { get; }
+
+    /// <summary>Custom employee deductions (FR-PAY-007).</summary>
+    DbSet<PayrollDeduction> PayrollDeductions { get; }
+
+    /// <summary>Payroll run workflow records (FR-PAY-008..011).</summary>
+    DbSet<PayrollRun> PayrollRuns { get; }
+
+    /// <summary>Employee payslips per payroll run (FR-PAY-009).</summary>
+    DbSet<Payslip> Payslips { get; }
+
+    /// <summary>Open job requisitions (FR-REC-001).</summary>
+    DbSet<JobPosting> JobPostings { get; }
+
+    /// <summary>Recruitment pipeline candidates (FR-REC-002).</summary>
+    DbSet<Candidate> Candidates { get; }
+
+    /// <summary>Onboarding checklist tasks (FR-REC-006).</summary>
+    DbSet<OnboardingTask> OnboardingTasks { get; }
+
+    /// <summary>Performance review cycles (FR-PERF-001).</summary>
+    DbSet<ReviewCycle> ReviewCycles { get; }
+
+    /// <summary>Employee goals per review cycle (FR-PERF-002).</summary>
+    DbSet<EmployeeGoal> EmployeeGoals { get; }
+
+    /// <summary>Performance reviews (FR-PERF-003..005).</summary>
+    DbSet<PerformanceReview> PerformanceReviews { get; }
+
+    /// <summary>360 peer feedback (FR-PERF-006).</summary>
+    DbSet<PeerFeedback> PeerFeedbacks { get; }
+
     /// <summary>Commits staged changes atomically (audit rules applied).</summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

@@ -7,10 +7,10 @@ using Microsoft.Extensions.Options;
 namespace Employee360.Infrastructure.Services.Email;
 
 /// <summary>
-/// SMTP implementation of <see cref="IEmailService"/> (PRD Integration: SMTP email
-/// for workflow notifications and password resets).
+/// SMTP implementation of <see cref="IEmailSender"/> (PRD Integration: SMTP email
+/// for workflow notifications and password resets; Gmail SMTP in development).
 /// </summary>
-public sealed class SmtpEmailService : IEmailService
+public sealed class SmtpEmailService : IEmailSender
 {
     private readonly EmailSettings _settings;
     private readonly ILogger<SmtpEmailService> _logger;

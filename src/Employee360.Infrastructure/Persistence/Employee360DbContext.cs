@@ -88,10 +88,62 @@ public class Employee360DbContext : DbContext, IUnitOfWork, IApplicationDbContex
     /// <summary>In-app notifications.</summary>
     public DbSet<Notification> Notifications => Set<Notification>();
 
-    // -----------------------------------------------------------------------
-    // DbSets grow batch by batch:
-    //   Phase 2: AttendanceRecords, Shifts, PayrollRuns, Payslips
-    // -----------------------------------------------------------------------
+    /// <summary>Organization company profile (singleton).</summary>
+    public DbSet<Company> Companies => Set<Company>();
+
+    /// <summary>Configurable workflow email templates.</summary>
+    public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
+
+    /// <summary>Work shift definitions.</summary>
+    public DbSet<Shift> Shifts => Set<Shift>();
+
+    /// <summary>Daily attendance records.</summary>
+    public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
+
+    /// <summary>Weekly timesheets for non-shift staff.</summary>
+    public DbSet<Timesheet> Timesheets => Set<Timesheet>();
+
+    /// <summary>Salary structure templates.</summary>
+    public DbSet<SalaryStructure> SalaryStructures => Set<SalaryStructure>();
+
+    /// <summary>Employee salary assignments.</summary>
+    public DbSet<EmployeeSalary> EmployeeSalaries => Set<EmployeeSalary>();
+
+    /// <summary>Configurable PAYE tax bands.</summary>
+    public DbSet<TaxBand> TaxBands => Set<TaxBand>();
+
+    /// <summary>Statutory rate configuration.</summary>
+    public DbSet<PayrollStatutoryRate> PayrollStatutoryRates => Set<PayrollStatutoryRate>();
+
+    /// <summary>Custom employee deductions.</summary>
+    public DbSet<PayrollDeduction> PayrollDeductions => Set<PayrollDeduction>();
+
+    /// <summary>Payroll run workflow records.</summary>
+    public DbSet<PayrollRun> PayrollRuns => Set<PayrollRun>();
+
+    /// <summary>Employee payslips per payroll run.</summary>
+    public DbSet<Payslip> Payslips => Set<Payslip>();
+
+    /// <summary>Open job requisitions.</summary>
+    public DbSet<JobPosting> JobPostings => Set<JobPosting>();
+
+    /// <summary>Recruitment pipeline candidates.</summary>
+    public DbSet<Candidate> Candidates => Set<Candidate>();
+
+    /// <summary>Onboarding checklist tasks.</summary>
+    public DbSet<OnboardingTask> OnboardingTasks => Set<OnboardingTask>();
+
+    /// <summary>Performance review cycles.</summary>
+    public DbSet<ReviewCycle> ReviewCycles => Set<ReviewCycle>();
+
+    /// <summary>Employee goals per review cycle.</summary>
+    public DbSet<EmployeeGoal> EmployeeGoals => Set<EmployeeGoal>();
+
+    /// <summary>Performance reviews.</summary>
+    public DbSet<PerformanceReview> PerformanceReviews => Set<PerformanceReview>();
+
+    /// <summary>360 peer feedback.</summary>
+    public DbSet<PeerFeedback> PeerFeedbacks => Set<PeerFeedback>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

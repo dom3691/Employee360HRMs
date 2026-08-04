@@ -3,13 +3,16 @@ using Employee360.Application.Features.Auth.ForgotPassword;
 using Employee360.Application.Features.Auth.Login;
 using Employee360.Application.Features.Auth.RefreshToken;
 using Employee360.Application.Features.Auth.ResetPassword;
+using Employee360.API.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Employee360.API.Controllers;
 
 /// <summary>Authentication endpoints (FR-AUTH-001..004).</summary>
 [Route("api/v1/auth")]
+[EnableRateLimiting(ApiHardeningExtensions.AuthRateLimitPolicy)]
 public sealed class AuthController : ApiControllerBase
 {
     /// <summary>Authenticates with email + password, returning an access/refresh token pair.</summary>

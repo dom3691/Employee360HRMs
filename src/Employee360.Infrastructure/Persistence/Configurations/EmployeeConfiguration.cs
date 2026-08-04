@@ -55,6 +55,12 @@ public sealed class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
         builder.Property(e => e.WorkLocation)
             .HasMaxLength(128);
 
+        builder.Property(e => e.PensionPin)
+            .HasMaxLength(32);
+
+        builder.Property(e => e.PfaName)
+            .HasMaxLength(128);
+
         builder.Property(e => e.Gender)
             .HasConversion<string>()
             .HasMaxLength(32);

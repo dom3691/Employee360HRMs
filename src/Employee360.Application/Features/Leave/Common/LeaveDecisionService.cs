@@ -1,4 +1,5 @@
 using Employee360.Application.Common.Interfaces;
+using Employee360.Application.Common.Services;
 using Employee360.Domain.Common;
 using Employee360.Domain.Constants;
 using Employee360.Domain.Entities;
@@ -20,19 +21,22 @@ public sealed class LeaveDecisionService
     private readonly IManagerScopeService _managerScopeService;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILeaveNotifier _notifier;
+    private readonly IAttendanceIntegrationService _attendanceIntegration;
 
     public LeaveDecisionService(
         IApplicationDbContext context,
         ICurrentUserService currentUserService,
         IManagerScopeService managerScopeService,
         IDateTimeProvider dateTimeProvider,
-        ILeaveNotifier notifier)
+        ILeaveNotifier notifier,
+        IAttendanceIntegrationService attendanceIntegration)
     {
         _context = context;
         _currentUserService = currentUserService;
         _managerScopeService = managerScopeService;
         _dateTimeProvider = dateTimeProvider;
         _notifier = notifier;
+        _attendanceIntegration = attendanceIntegration;
     }
 
     /// <summary>Applies a decision to a pending/escalated request.</summary>
@@ -115,6 +119,11 @@ public sealed class LeaveDecisionService
         };
 
         await _notifier.NotifyDecisionAsync(request, request.Employee, decision, comments, cancellationToken);
+
+        if (action == ApprovalAction.Approve)
+        {
+            await _attendanceIntegration.SyncApprovedLeaveAsync(request, cancellationToken);
+        }
 
         return Result.Success();
     }

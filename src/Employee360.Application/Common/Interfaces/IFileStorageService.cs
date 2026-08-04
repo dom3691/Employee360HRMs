@@ -16,4 +16,15 @@ public interface IFileStorageService
         byte[] content,
         string contentType,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Generates a time-limited SAS URL for downloading a blob (documents/payslips).
+    /// </summary>
+    /// <param name="path">Relative storage path returned from upload.</param>
+    /// <param name="expiry">Optional SAS lifetime; defaults to 1 hour.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<string> GetDownloadUrlAsync(
+        string path,
+        TimeSpan? expiry = null,
+        CancellationToken cancellationToken = default);
 }

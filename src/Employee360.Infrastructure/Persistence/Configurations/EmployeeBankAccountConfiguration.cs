@@ -17,6 +17,9 @@ public sealed class EmployeeBankAccountConfiguration : IEntityTypeConfiguration<
             .HasMaxLength(128)
             .IsRequired();
 
+        builder.Property(b => b.BankCode)
+            .HasMaxLength(10);
+
         // AES-256 ciphertext (base64 IV + payload) — never plain text (NFR-SEC-004).
         builder.Property(b => b.AccountNumberEncrypted)
             .HasMaxLength(256)

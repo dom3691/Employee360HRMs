@@ -182,6 +182,7 @@ public sealed class LeaveController : ApiControllerBase
     /// <summary>Lists public holidays for a year.</summary>
     [HttpGet("holidays")]
     [HasPermission(Permissions.Leave.Apply)]
+    [ResponseCache(Duration = 3600, Location = ResponseCacheLocation.Any, VaryByQueryKeys = new[] { "year" })]
     [ProducesResponseType(typeof(IReadOnlyList<PublicHolidayItem>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Holidays(
         [FromQuery] int? year,

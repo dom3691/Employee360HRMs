@@ -85,6 +85,7 @@ public sealed class IdentityDataSeeder : IDataSeeder
                 Permissions.Performance.ManageTeamReviews,
                 Permissions.Performance.Manage,
                 Permissions.Reports.ViewHR,
+                Permissions.Administration.SystemConfiguration,
             ],
             [RoleNames.HRManager] =
             [

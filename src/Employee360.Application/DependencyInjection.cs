@@ -41,6 +41,21 @@ public static class DependencyInjection
         // In-app notifications (FR-ESS-001).
         services.AddScoped<INotificationService, NotificationService>();
 
+        // Configurable email templates (FR-ADM-003).
+        services.AddScoped<IEmailTemplateService, EmailTemplateService>();
+
+        // Attendance integration and status calculation (FR-ATT-003, FR-ATT-008).
+        services.AddScoped<IAttendanceIntegrationService, AttendanceIntegrationService>();
+
+        // Recruitment notifications (FR-REC-002).
+        services.AddScoped<IRecruitmentNotifier, RecruitmentNotifier>();
+
+        // Nigeria payroll calculation engine (FR-PAY-003..007, FR-PAY-012).
+        services.AddSingleton<INigeriaPayrollCalculator, NigeriaPayrollCalculator>();
+        services.AddScoped<IEmployeePayrollCalculationService, EmployeePayrollCalculationService>();
+        services.AddSingleton<IPayslipPdfGenerator, PayslipPdfGenerator>();
+        services.AddSingleton<IBankPaymentFileExporter, BankPaymentFileExporter>();
+
         return services;
     }
 }

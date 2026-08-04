@@ -1,8 +1,12 @@
+using Employee360.API.Extensions;
 using Employee360.API.Middleware;
 using Employee360.Application;
 using Employee360.Infrastructure;
+using Employee360.Infrastructure.Configuration;
+using Employee360.Infrastructure.HealthChecks;
 using Hangfire;
-using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.RateLimiting;
 using Serilog;
 
 // ---------------------------------------------------------------------------
@@ -19,6 +23,11 @@ try
     var builder = WebApplication.CreateBuilder(args);
 
     // =======================================================================
+    // 0. KEY VAULT — optional; secrets override appsettings when configured
+    // =======================================================================
+    builder.Configuration.AddEmployee360KeyVault(builder.Configuration["KeyVault:Uri"]);
+
+    // =======================================================================
     // 1. LOGGING — Serilog (configuration-driven; App Insights sink via config)
     // =======================================================================
     builder.Host.UseSerilog((context, services, loggerConfiguration) => loggerConfiguration
@@ -27,22 +36,30 @@ try
         .Enrich.FromLogContext()
         .Enrich.WithProperty("Application", "Employee360.API"));
 
+    // Application Insights telemetry (Batch 17).
+    var appInsightsConnection = builder.Configuration["ApplicationInsights:ConnectionString"];
+    if (!string.IsNullOrWhiteSpace(appInsightsConnection))
+    {
+        builder.Services.AddApplicationInsightsTelemetry();
+    }
+
     // =======================================================================
-    // 2. LAYERS — Application (MediatR, validators, mappings) + Infrastructure
-    //    (EF Core, repositories, identity, Hangfire, email, blob storage)
+    // 2. LAYERS — Application + Infrastructure
     // =======================================================================
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
+    builder.Services.AddEmployee360HealthChecks();
 
     // =======================================================================
-    // 3. AUTHENTICATION & AUTHORIZATION — JWT Bearer + granular RBAC policies
+    // 3. AUTHENTICATION & AUTHORIZATION
     // =======================================================================
     builder.Services.AddJwtAuthentication(builder.Configuration);
     builder.Services.AddPermissionAuthorization();
 
     // =======================================================================
-    // 4. API — Controllers, versioned routes, JSON options
+    // 4. API HARDENING — rate limiting, response caching (Batch 17)
     // =======================================================================
+    builder.Services.AddEmployee360ApiHardening();
     builder.Services.AddControllers();
 
     // =======================================================================
@@ -61,79 +78,72 @@ try
             .AllowCredentials()));
 
     // =======================================================================
-    // 6. SWAGGER / OPENAPI — with JWT bearer security definition
+    // 6. SWAGGER / OPENAPI — JWT auth, module grouping, XML comments
     // =======================================================================
-    builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen(options =>
-    {
-        options.SwaggerDoc("v1", new OpenApiInfo
-        {
-            Title = "Employee360 HRMS API",
-            Version = "v1",
-            Description = "Enterprise HR management platform — employee core, leave, attendance, and payroll for Nigerian organizations.",
-        });
+    builder.Services.AddEmployee360Swagger();
 
-        options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-        {
-            Name = "Authorization",
-            Type = SecuritySchemeType.Http,
-            Scheme = "bearer",
-            BearerFormat = "JWT",
-            In = ParameterLocation.Header,
-            Description = "Enter your JWT access token.",
-        });
-
-        options.AddSecurityRequirement(new OpenApiSecurityRequirement
-        {
-            {
-                new OpenApiSecurityScheme
-                {
-                    Reference = new OpenApiReference
-                    {
-                        Type = ReferenceType.SecurityScheme,
-                        Id = "Bearer",
-                    },
-                },
-                Array.Empty<string>()
-            },
-        });
-
-        var xmlFile = $"{typeof(Program).Assembly.GetName().Name}.xml";
-        var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-        if (File.Exists(xmlPath))
-        {
-            options.IncludeXmlComments(xmlPath);
-        }
-    });
-
-    // =======================================================================
-    // 7. BACKGROUND JOBS — Hangfire server/storage registered in
-    //    AddInfrastructure when "Hangfire:Enabled" is true.
-    // =======================================================================
     var hangfireEnabled = builder.Configuration.GetValue("Hangfire:Enabled", defaultValue: false);
+    var swaggerEnabled = builder.Configuration.GetValue(
+        "Swagger:Enabled",
+        builder.Environment.IsDevelopment());
 
     var app = builder.Build();
+
+    // One-shot demo seed (scripts/seed-demo-data.ps1).
+    if (args.Contains("--seed-demo", StringComparer.OrdinalIgnoreCase))
+    {
+        using var scope = app.Services.CreateScope();
+        var seeders = scope.ServiceProvider.GetServices<Employee360.Application.Common.Interfaces.IDataSeeder>();
+        foreach (var seeder in seeders)
+        {
+            await seeder.SeedAsync();
+        }
+
+        Log.Information("Demo data seed completed via --seed-demo");
+        return;
+    }
 
     // =======================================================================
     // HTTP PIPELINE (order matters)
     // =======================================================================
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseHsts();
+    }
+
     app.UseGlobalExceptionHandling();
+    app.UseSecurityHeaders();
 
-    app.UseSerilogRequestLogging();
+    app.UseSerilogRequestLogging(options =>
+    {
+        options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+        {
+            diagnosticContext.Set("RequestHost", httpContext.Request.Host.Value);
+            diagnosticContext.Set("RequestScheme", httpContext.Request.Scheme);
+            diagnosticContext.Set("UserAgent", httpContext.Request.Headers.UserAgent.ToString());
 
-    if (app.Environment.IsDevelopment())
+            if (httpContext.User.Identity?.IsAuthenticated == true)
+            {
+                diagnosticContext.Set("UserId", httpContext.User.FindFirst("sub")?.Value);
+                diagnosticContext.Set("UserEmail", httpContext.User.FindFirst("email")?.Value);
+            }
+        };
+    });
+
+    if (swaggerEnabled)
     {
         app.UseSwagger();
         app.UseSwaggerUI(options =>
         {
             options.SwaggerEndpoint("/swagger/v1/swagger.json", "Employee360 HRMS API v1");
+            options.DocumentTitle = "Employee360 HRMS API";
         });
     }
 
     app.UseHttpsRedirection();
-
+    app.UseResponseCaching();
+    app.UseRateLimiter();
     app.UseCors(CorsPolicyName);
-
     app.UseAuthentication();
     app.UseAuthorization();
 
@@ -142,22 +152,50 @@ try
         app.UseHangfireDashboard(
             app.Configuration.GetValue("Hangfire:DashboardPath", "/hangfire"));
 
-        // Recurring leave jobs (FR-LV-002 accrual, FR-LV-009 escalation).
         RecurringJob.AddOrUpdate<Employee360.Infrastructure.BackgroundJobs.LeaveAccrualJob>(
             "leave-accrual",
             job => job.RunAsync(CancellationToken.None),
-            Cron.Daily(2)); // 02:00 daily
+            Cron.Daily(2));
 
         RecurringJob.AddOrUpdate<Employee360.Infrastructure.BackgroundJobs.LeaveEscalationJob>(
             "leave-escalation",
             job => job.RunAsync(CancellationToken.None),
             Cron.Hourly());
+
+        RecurringJob.AddOrUpdate<Employee360.Infrastructure.BackgroundJobs.DailyStatusCalculationJob>(
+            "attendance-daily-status",
+            job => job.RunAsync(CancellationToken.None),
+            Cron.Daily(1));
     }
 
-    app.MapControllers();
+    app.MapControllers()
+        .RequireRateLimiting(ApiHardeningExtensions.ApiRateLimitPolicy);
 
-    // Seed data (roles, permission catalog, RBAC matrix) runs in the background
-    // via DataSeedHostedService, registered in AddInfrastructure.
+    app.MapHealthChecks("/health", new HealthCheckOptions
+    {
+        ResponseWriter = async (context, report) =>
+        {
+            context.Response.ContentType = "application/json";
+            var payload = new
+            {
+                status = report.Status.ToString(),
+                duration = report.TotalDuration.TotalMilliseconds,
+                checks = report.Entries.Select(e => new
+                {
+                    name = e.Key,
+                    status = e.Value.Status.ToString(),
+                    description = e.Value.Description,
+                    duration = e.Value.Duration.TotalMilliseconds,
+                }),
+            };
+            await context.Response.WriteAsJsonAsync(payload);
+        },
+    });
+
+    app.MapHealthChecks("/health/ready", new HealthCheckOptions
+    {
+        Predicate = check => check.Tags.Contains("ready"),
+    });
 
     app.Run();
 }
