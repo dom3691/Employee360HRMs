@@ -47,10 +47,11 @@ public sealed class CandidatesController : ApiControllerBase
 
     [HttpPost("{id:guid}/resume")]
     [HasPermission(Permissions.Recruitment.Manage)]
+    [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
     public async Task<IActionResult> UploadResume(
         [FromRoute] Guid id,
-        [FromForm] IFormFile file,
+        IFormFile file,
         CancellationToken cancellationToken)
     {
         if (file.Length == 0)

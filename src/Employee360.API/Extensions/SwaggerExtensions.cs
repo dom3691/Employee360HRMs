@@ -76,6 +76,12 @@ public static class SwaggerExtensions
                 },
             });
 
+            options.MapType<IFormFile>(() => new OpenApiSchema
+            {
+                Type = "string",
+                Format = "binary",
+            });
+
             options.TagActionsBy(api =>
             {
                 var path = api.RelativePath ?? string.Empty;
@@ -95,9 +101,10 @@ public static class SwaggerExtensions
 
             options.DocInclusionPredicate((_, _) => true);
             options.OrderActionsBy(api => $"{ResolveModule(api.RelativePath)}_{api.HttpMethod}_{api.RelativePath}");
+            options.OperationFilter<FileUploadOperationFilter>();
 
             IncludeXmlComments(options, typeof(Program).Assembly);
-            IncludeXmlComments(options, typeof(Application.DependencyInjection).Assembly);
+            IncludeXmlComments(options, typeof(DependencyInjection).Assembly);
         });
     }
 

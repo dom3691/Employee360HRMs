@@ -149,23 +149,33 @@ try
 
     if (hangfireEnabled)
     {
-        app.UseHangfireDashboard(
-            app.Configuration.GetValue("Hangfire:DashboardPath", "/hangfire"));
+        try
+        {
+            app.UseHangfireDashboard(
+                app.Configuration.GetValue("Hangfire:DashboardPath", "/hangfire"));
 
-        RecurringJob.AddOrUpdate<Employee360.Infrastructure.BackgroundJobs.LeaveAccrualJob>(
-            "leave-accrual",
-            job => job.RunAsync(CancellationToken.None),
-            Cron.Daily(2));
+            RecurringJob.AddOrUpdate<Employee360.Infrastructure.BackgroundJobs.LeaveAccrualJob>(
+                "leave-accrual",
+                job => job.RunAsync(CancellationToken.None),
+                Cron.Daily(2));
 
-        RecurringJob.AddOrUpdate<Employee360.Infrastructure.BackgroundJobs.LeaveEscalationJob>(
-            "leave-escalation",
-            job => job.RunAsync(CancellationToken.None),
-            Cron.Hourly());
+            RecurringJob.AddOrUpdate<Employee360.Infrastructure.BackgroundJobs.LeaveEscalationJob>(
+                "leave-escalation",
+                job => job.RunAsync(CancellationToken.None),
+                Cron.Hourly());
 
-        RecurringJob.AddOrUpdate<Employee360.Infrastructure.BackgroundJobs.DailyStatusCalculationJob>(
-            "attendance-daily-status",
-            job => job.RunAsync(CancellationToken.None),
-            Cron.Daily(1));
+            RecurringJob.AddOrUpdate<Employee360.Infrastructure.BackgroundJobs.DailyStatusCalculationJob>(
+                "attendance-daily-status",
+                job => job.RunAsync(CancellationToken.None),
+                Cron.Daily(1));
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(
+                ex,
+                "Hangfire recurring jobs could not be registered; " +
+                "verify HangfireConnection and that the database exists. API will continue without background jobs.");
+        }
     }
 
     app.MapControllers()

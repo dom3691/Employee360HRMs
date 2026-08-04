@@ -48,7 +48,8 @@ public sealed class PerformanceReviewConfiguration : IEntityTypeConfiguration<Pe
         builder.Property(r => r.FinalRating).HasPrecision(3, 2);
         builder.HasOne(r => r.ReviewCycle).WithMany(c => c.Reviews).HasForeignKey(r => r.ReviewCycleId);
         builder.HasOne(r => r.Employee).WithMany().HasForeignKey(r => r.EmployeeId).OnDelete(DeleteBehavior.Cascade);
-        builder.HasOne(r => r.ManagerEmployee).WithMany().HasForeignKey(r => r.ManagerEmployeeId).OnDelete(DeleteBehavior.SetNull);
+        // NoAction avoids SQL Server "multiple cascade paths" (EmployeeId already cascades).
+        builder.HasOne(r => r.ManagerEmployee).WithMany().HasForeignKey(r => r.ManagerEmployeeId).OnDelete(DeleteBehavior.NoAction);
         builder.HasIndex(r => new { r.ReviewCycleId, r.EmployeeId })
             .IsUnique()
             .HasDatabaseName("IX_PerformanceReviews_Cycle_Employee");

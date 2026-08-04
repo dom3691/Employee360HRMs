@@ -89,6 +89,7 @@ public sealed class EmployeesController : ApiControllerBase
     /// <summary>Uploads an employee document (PDF/JPG/PNG, max 10 MB).</summary>
     [HttpPost("{id:guid}/documents")]
     [HasPermission(Permissions.Documents.ManageAll)]
+    [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UploadDocument(
@@ -110,6 +111,7 @@ public sealed class EmployeesController : ApiControllerBase
     /// <summary>Bulk-imports employees from a CSV file (header: FirstName,LastName,Email,PhoneNumber,JoinDate).</summary>
     [HttpPost("bulk-import")]
     [HasPermission(Permissions.Employees.Create)]
+    [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(BulkImportEmployeesResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> BulkImport(

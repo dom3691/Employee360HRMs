@@ -2591,7 +2591,7 @@ namespace Employee360.Infrastructure.Persistence.Migrations
                     b.HasOne("Employee360.Domain.Entities.Employee", "ManagerEmployee")
                         .WithMany()
                         .HasForeignKey("ManagerEmployeeId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("Employee360.Domain.Entities.ReviewCycle", "ReviewCycle")
                         .WithMany("Reviews")

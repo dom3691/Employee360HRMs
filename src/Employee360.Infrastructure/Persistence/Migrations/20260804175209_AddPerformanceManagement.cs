@@ -105,7 +105,7 @@ namespace Employee360.Infrastructure.Persistence.Migrations
                         column: x => x.ManagerEmployeeId,
                         principalTable: "Employees",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                     table.ForeignKey(
                         name: "FK_PerformanceReviews_ReviewCycles_ReviewCycleId",
                         column: x => x.ReviewCycleId,
