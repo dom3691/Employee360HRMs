@@ -1,0 +1,36 @@
+# Render Blueprint — Employee360 HRMS API
+# Docs: https://render.com/docs/blueprint-spec
+#
+# IMPORTANT: This app uses SQL Server (EF Core). Render does not offer SQL Server.
+# Create Azure SQL Database (or another hosted SQL Server) first, then set
+# ConnectionStrings__DefaultConnection in the Render dashboard.
+
+services:
+  - type: web
+    name: employee360-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: frankfurt
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Development
+      - key: Hangfire__Enabled
+        value: "false"
+      - key: DemoData__Enabled
+        value: "false"
+      - key: Database__SeedOnStartup
+        value: "true"
+      - key: Swagger__Enabled
+        value: "true"
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+      - key: ConnectionStrings__HangfireConnection
+        sync: false
+      - key: Jwt__SigningKey
+        generateValue: true
+      - key: Encryption__Key
+        generateValue: true
+      - key: Cors__AllowedOrigins__0
+        sync: false

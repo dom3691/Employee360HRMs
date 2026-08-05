@@ -22,6 +22,13 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
+    // Render/Railway/Fly.io: bind to the platform-assigned PORT.
+    var port = Environment.GetEnvironmentVariable("PORT");
+    if (!string.IsNullOrEmpty(port))
+    {
+        builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+    }
+
     // =======================================================================
     // 0. KEY VAULT — optional; secrets override appsettings when configured
     // =======================================================================
