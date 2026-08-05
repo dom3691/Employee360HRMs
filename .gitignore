@@ -41,3 +41,4 @@ dist/
 # Python (doc generation)
 __pycache__/
 *.pyc
+/src/Employee360.API/.env
