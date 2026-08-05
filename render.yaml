@@ -1,9 +1,10 @@
 # Render Blueprint — Employee360 HRMS API
 # Docs: https://render.com/docs/blueprint-spec
 #
-# IMPORTANT: This app uses SQL Server (EF Core). Render does not offer SQL Server.
-# Create Azure SQL Database (or another hosted SQL Server) first, then set
-# ConnectionStrings__DefaultConnection in the Render dashboard.
+# PostgreSQL: add a Render Postgres instance in the dashboard, then set
+# ConnectionStrings__DefaultConnection (and optionally HangfireConnection) to the
+# internal connection string. Hangfire can share the same database locally;
+# use a separate DB on Render if you prefer isolation.
 
 services:
   - type: web

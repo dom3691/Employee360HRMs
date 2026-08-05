@@ -1,0 +1,27 @@
+# Local PostgreSQL for Employee360 development.
+# Start:  docker compose up -d
+# Stop:   docker compose down
+# Then run migrations yourself:
+#   dotnet ef database update --project src/Employee360.Infrastructure --startup-project src/Employee360.API
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: employee360-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: Employee360_Dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - employee360_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d Employee360_Dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  employee360_pgdata:

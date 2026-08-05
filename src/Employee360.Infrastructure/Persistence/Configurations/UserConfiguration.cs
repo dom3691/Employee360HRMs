@@ -34,7 +34,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.HasIndex(u => u.EmployeeId)
             .IsUnique()
-            .HasFilter("[EmployeeId] IS NOT NULL")
+            .HasFilter("\"EmployeeId\" IS NOT NULL")
             .HasDatabaseName("IX_Users_EmployeeId");
 
         builder.Ignore(u => u.DomainEvents);

@@ -12,6 +12,7 @@ using Employee360.Infrastructure.Persistence.Seeding;
 using Employee360.Infrastructure.BackgroundJobs;
 using Employee360.Infrastructure.Services;
 using Hangfire;
+using Hangfire.PostgreSql;
 using Employee360.Infrastructure.Services.Email;
 using Employee360.Infrastructure.Services.Payroll;
 using Employee360.Infrastructure.Services.Reports;
@@ -69,9 +70,9 @@ public static class DependencyInjection
 
         services.AddDbContext<Employee360DbContext>((serviceProvider, options) =>
         {
-            options.UseSqlServer(
+            options.UseNpgsql(
                 configuration.GetConnectionString("DefaultConnection"),
-                sqlOptions => sqlOptions.EnableRetryOnFailure(maxRetryCount: 3));
+                npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(maxRetryCount: 3));
 
             options.AddInterceptors(
                 serviceProvider.GetRequiredService<AuditableEntityInterceptor>());
@@ -114,9 +115,9 @@ public static class DependencyInjection
         services.AddHostedService<DataSeedHostedService>();
 
         // ---------------------------------------------------------------
-        // Background jobs: Hangfire server + SQL storage (FR-LV accrual and
+        // Background jobs: Hangfire server + PostgreSQL storage (FR-LV accrual and
         // escalation). Disabled via "Hangfire:Enabled" in environments without
-        // a reachable SQL Server (e.g. local Swagger exploration).
+        // a reachable database (e.g. local Swagger exploration).
         // ---------------------------------------------------------------
         services.AddScoped<LeaveAccrualJob>();
         services.AddScoped<LeaveEscalationJob>();
@@ -129,7 +130,10 @@ public static class DependencyInjection
                 .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
                 .UseSimpleAssemblyNameTypeSerializer()
                 .UseRecommendedSerializerSettings()
-                .UseSqlServerStorage(configuration.GetConnectionString("HangfireConnection")));
+                .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(
+                    configuration.GetConnectionString("HangfireConnection")
+                    ?? configuration.GetConnectionString("DefaultConnection")
+                    ?? throw new InvalidOperationException("Missing Hangfire or Default connection string."))));
 
             services.AddHangfireServer(options =>
             {
