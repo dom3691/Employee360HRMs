@@ -1,6 +1,7 @@
 using Employee360.Application.Common.Interfaces;
 using Employee360.Application.Common.Models;
 using Employee360.Application.Common.Services;
+using Employee360.Application.Common.Validation;
 using Employee360.Domain.Common;
 using Employee360.Domain.Constants;
 using Employee360.Domain.Entities;
@@ -246,15 +247,27 @@ public sealed class GetPayrollRunHandler : IRequestHandler<GetPayrollRunQuery, R
             run.CalculationJobId, run.SubmittedAtUtc, run.ApprovedAtUtc, run.FinalizedAtUtc);
 }
 
-public sealed record ListPayrollRunsQuery(int? Year) : IRequest<Result<IReadOnlyList<PayrollRunDto>>>;
+public sealed record ListPayrollRunsQuery(
+    int Page = 1,
+    int PageSize = 20,
+    int? Year = null) : IRequest<Result<PagedResult<PayrollRunDto>>>;
 
-public sealed class ListPayrollRunsHandler : IRequestHandler<ListPayrollRunsQuery, Result<IReadOnlyList<PayrollRunDto>>>
+public sealed class ListPayrollRunsValidator : AbstractValidator<ListPayrollRunsQuery>
+{
+    public ListPayrollRunsValidator()
+    {
+        RuleFor(q => q.Page).ValidPage();
+        RuleFor(q => q.PageSize).ValidPageSize();
+    }
+}
+
+public sealed class ListPayrollRunsHandler : IRequestHandler<ListPayrollRunsQuery, Result<PagedResult<PayrollRunDto>>>
 {
     private readonly IApplicationDbContext _context;
 
     public ListPayrollRunsHandler(IApplicationDbContext context) => _context = context;
 
-    public async Task<Result<IReadOnlyList<PayrollRunDto>>> Handle(
+    public async Task<Result<PagedResult<PayrollRunDto>>> Handle(
         ListPayrollRunsQuery request,
         CancellationToken cancellationToken)
     {
@@ -265,13 +278,19 @@ public sealed class ListPayrollRunsHandler : IRequestHandler<ListPayrollRunsQuer
             query = query.Where(r => r.PeriodYear == request.Year.Value);
         }
 
+        var total = await query.CountAsync(cancellationToken);
+
         var runs = await query
             .OrderByDescending(r => r.PeriodYear)
             .ThenByDescending(r => r.PeriodMonth)
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
             .ToListAsync(cancellationToken);
 
-        return Result.Success<IReadOnlyList<PayrollRunDto>>(
-            runs.Select(GetPayrollRunHandler.MapRun).ToList());
+        var items = runs.Select(GetPayrollRunHandler.MapRun).ToList();
+
+        return Result.Success(new PagedResult<PayrollRunDto>(
+            items, request.Page, request.PageSize, total));
     }
 }
 

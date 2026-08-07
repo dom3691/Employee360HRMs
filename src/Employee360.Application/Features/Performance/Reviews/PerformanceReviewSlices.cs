@@ -1,4 +1,6 @@
 using Employee360.Application.Common.Interfaces;
+using Employee360.Application.Common.Models;
+using Employee360.Application.Common.Validation;
 using Employee360.Application.Features.Performance;
 using Employee360.Domain.Common;
 using Employee360.Domain.Constants;
@@ -255,17 +257,28 @@ public sealed class FinalizePerformanceReviewHandler : IRequestHandler<FinalizeP
 }
 
 public sealed record GetPerformanceReviewsQuery(
-    Guid? ReviewCycleId,
-    Guid? EmployeeId) : IRequest<Result<IReadOnlyList<PerformanceReviewDto>>>;
+    int Page = 1,
+    int PageSize = 20,
+    Guid? ReviewCycleId = null,
+    Guid? EmployeeId = null) : IRequest<Result<PagedResult<PerformanceReviewDto>>>;
+
+public sealed class GetPerformanceReviewsValidator : AbstractValidator<GetPerformanceReviewsQuery>
+{
+    public GetPerformanceReviewsValidator()
+    {
+        RuleFor(q => q.Page).ValidPage();
+        RuleFor(q => q.PageSize).ValidPageSize();
+    }
+}
 
 public sealed class GetPerformanceReviewsHandler
-    : IRequestHandler<GetPerformanceReviewsQuery, Result<IReadOnlyList<PerformanceReviewDto>>>
+    : IRequestHandler<GetPerformanceReviewsQuery, Result<PagedResult<PerformanceReviewDto>>>
 {
     private readonly IApplicationDbContext _context;
 
     public GetPerformanceReviewsHandler(IApplicationDbContext context) => _context = context;
 
-    public async Task<Result<IReadOnlyList<PerformanceReviewDto>>> Handle(
+    public async Task<Result<PagedResult<PerformanceReviewDto>>> Handle(
         GetPerformanceReviewsQuery request,
         CancellationToken cancellationToken)
     {
@@ -281,8 +294,12 @@ public sealed class GetPerformanceReviewsHandler
             query = query.Where(r => r.EmployeeId == request.EmployeeId.Value);
         }
 
+        var total = await query.CountAsync(cancellationToken);
+
         var items = await query
             .OrderByDescending(r => r.ReviewCycle!.StartDate)
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
             .Select(r => new PerformanceReviewDto(
                 r.Id,
                 r.ReviewCycleId,
@@ -299,7 +316,8 @@ public sealed class GetPerformanceReviewsHandler
                 r.FinalizedAtUtc))
             .ToListAsync(cancellationToken);
 
-        return Result.Success<IReadOnlyList<PerformanceReviewDto>>(items);
+        return Result.Success(new PagedResult<PerformanceReviewDto>(
+            items, request.Page, request.PageSize, total));
     }
 }
 

@@ -1,3 +1,4 @@
+using Employee360.Application.Common.Models;
 using Employee360.Application.Features.Leave.AdjustLeaveBalance;
 using Employee360.Application.Features.Leave.ApplyLeave;
 using Employee360.Application.Features.Leave.ApproveLeave;
@@ -35,18 +36,23 @@ public sealed class LeaveController : ApiControllerBase
     /// <summary>Lists the authenticated employee's leave requests.</summary>
     [HttpGet("requests/mine")]
     [HasPermission(Permissions.Leave.Apply)]
-    [ProducesResponseType(typeof(IReadOnlyList<LeaveRequestItem>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<LeaveRequestItem>), StatusCodes.Status200OK)]
     public async Task<IActionResult> MyRequests(
-        [FromQuery] int? year,
-        CancellationToken cancellationToken)
-        => FromResult(await Sender.Send(new GetMyLeaveRequestsQuery(year), cancellationToken));
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] int? year = null,
+        CancellationToken cancellationToken = default)
+        => FromResult(await Sender.Send(new GetMyLeaveRequestsQuery(page, pageSize, year), cancellationToken));
 
     /// <summary>Lists pending/escalated requests awaiting the authenticated manager.</summary>
     [HttpGet("requests/approval-queue")]
     [HasPermission(Permissions.Leave.ApproveTeam)]
-    [ProducesResponseType(typeof(IReadOnlyList<LeaveRequestItem>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> ApprovalQueue(CancellationToken cancellationToken)
-        => FromResult(await Sender.Send(new GetApprovalQueueQuery(), cancellationToken));
+    [ProducesResponseType(typeof(PagedResult<LeaveRequestItem>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ApprovalQueue(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+        => FromResult(await Sender.Send(new GetApprovalQueueQuery(page, pageSize), cancellationToken));
 
     /// <summary>Approves a leave request (approver scope enforced in the handler).</summary>
     [HttpPut("requests/{id:guid}/approve")]

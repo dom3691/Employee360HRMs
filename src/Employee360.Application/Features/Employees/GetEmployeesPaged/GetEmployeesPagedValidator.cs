@@ -1,3 +1,4 @@
+using Employee360.Application.Common.Validation;
 using FluentValidation;
 
 namespace Employee360.Application.Features.Employees.GetEmployeesPaged;
@@ -10,11 +11,8 @@ public sealed class GetEmployeesPagedValidator : AbstractValidator<GetEmployeesP
 
     public GetEmployeesPagedValidator()
     {
-        RuleFor(q => q.Page)
-            .GreaterThanOrEqualTo(1).WithMessage("Page must be 1 or greater.");
-
-        RuleFor(q => q.PageSize)
-            .InclusiveBetween(1, 100).WithMessage("Page size must be between 1 and 100.");
+        RuleFor(q => q.Page).ValidPage();
+        RuleFor(q => q.PageSize).ValidPageSize();
 
         RuleFor(q => q.SortBy)
             .Must(s => SortFields.Contains(s.ToLowerInvariant()))

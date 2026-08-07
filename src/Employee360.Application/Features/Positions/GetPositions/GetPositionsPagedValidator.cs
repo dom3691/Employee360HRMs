@@ -1,3 +1,4 @@
+using Employee360.Application.Common.Validation;
 using FluentValidation;
 
 namespace Employee360.Application.Features.Positions.GetPositions;
@@ -7,10 +8,7 @@ public sealed class GetPositionsPagedValidator : AbstractValidator<GetPositionsP
 {
     public GetPositionsPagedValidator()
     {
-        RuleFor(q => q.Page)
-            .GreaterThanOrEqualTo(1).WithMessage("Page must be 1 or greater.");
-
-        RuleFor(q => q.PageSize)
-            .InclusiveBetween(1, 200).WithMessage("Page size must be between 1 and 200.");
+        RuleFor(q => q.Page).ValidPage();
+        RuleFor(q => q.PageSize).ValidPageSize();
     }
 }

@@ -1,4 +1,5 @@
 using Employee360.Application.Common.Interfaces;
+using Employee360.Application.Common.Models;
 using Employee360.Application.Features.Payroll.Calculate;
 using Employee360.Application.Features.Payroll.Deductions;
 using Employee360.Application.Features.Payroll.EmployeeSalaries;
@@ -148,11 +149,13 @@ public sealed class PayrollController : ApiControllerBase
 
     [HttpGet("runs")]
     [HasPermission(Permissions.Payroll.Run)]
-    [ProducesResponseType(typeof(IReadOnlyList<PayrollRunDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<PayrollRunDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ListRuns(
-        [FromQuery] int? year,
-        CancellationToken cancellationToken)
-        => FromResult(await Sender.Send(new ListPayrollRunsQuery(year), cancellationToken));
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] int? year = null,
+        CancellationToken cancellationToken = default)
+        => FromResult(await Sender.Send(new ListPayrollRunsQuery(page, pageSize, year), cancellationToken));
 
     [HttpGet("runs/{id:guid}")]
     [HasPermission(Permissions.Payroll.Run)]

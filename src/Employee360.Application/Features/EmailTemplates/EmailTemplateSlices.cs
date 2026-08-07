@@ -1,5 +1,6 @@
 using Employee360.Application.Common.Interfaces;
 using Employee360.Application.Common.Models;
+using Employee360.Application.Common.Validation;
 using Employee360.Domain.Common;
 using Employee360.Domain.Entities;
 using FluentValidation;
@@ -34,8 +35,8 @@ public sealed class GetEmailTemplatesPagedValidator : AbstractValidator<GetEmail
 {
     public GetEmailTemplatesPagedValidator()
     {
-        RuleFor(q => q.Page).GreaterThanOrEqualTo(1);
-        RuleFor(q => q.PageSize).InclusiveBetween(1, 100);
+        RuleFor(q => q.Page).ValidPage();
+        RuleFor(q => q.PageSize).ValidPageSize();
     }
 }
 

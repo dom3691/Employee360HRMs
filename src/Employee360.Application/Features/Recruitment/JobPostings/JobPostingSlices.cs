@@ -1,5 +1,6 @@
 using Employee360.Application.Common.Interfaces;
 using Employee360.Application.Common.Models;
+using Employee360.Application.Common.Validation;
 using Employee360.Domain.Common;
 using Employee360.Domain.Entities;
 using Employee360.Domain.Enums;
@@ -173,6 +174,15 @@ public sealed record GetJobPostingsQuery(
     int PageSize = 20,
     JobPostingStatus? Status = null,
     string? Search = null) : IRequest<Result<PagedResult<JobPostingDto>>>;
+
+public sealed class GetJobPostingsValidator : AbstractValidator<GetJobPostingsQuery>
+{
+    public GetJobPostingsValidator()
+    {
+        RuleFor(q => q.Page).ValidPage();
+        RuleFor(q => q.PageSize).ValidPageSize();
+    }
+}
 
 public sealed class GetJobPostingsHandler : IRequestHandler<GetJobPostingsQuery, Result<PagedResult<JobPostingDto>>>
 {

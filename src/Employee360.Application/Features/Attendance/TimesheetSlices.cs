@@ -1,5 +1,6 @@
 using Employee360.Application.Common.Interfaces;
 using Employee360.Application.Common.Models;
+using Employee360.Application.Common.Validation;
 using Employee360.Domain.Common;
 using Employee360.Domain.Constants;
 using Employee360.Domain.Entities;
@@ -248,6 +249,15 @@ public sealed record GetTimesheetsQuery(
     int Page = 1,
     int PageSize = 20,
     Guid? EmployeeId = null) : IRequest<Result<PagedResult<TimesheetDto>>>;
+
+public sealed class GetTimesheetsValidator : AbstractValidator<GetTimesheetsQuery>
+{
+    public GetTimesheetsValidator()
+    {
+        RuleFor(q => q.Page).ValidPage();
+        RuleFor(q => q.PageSize).ValidPageSize();
+    }
+}
 
 /// <summary>Handles <see cref="GetTimesheetsQuery"/>.</summary>
 public sealed class GetTimesheetsHandler : IRequestHandler<GetTimesheetsQuery, Result<PagedResult<TimesheetDto>>>

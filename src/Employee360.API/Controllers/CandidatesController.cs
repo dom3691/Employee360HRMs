@@ -1,3 +1,4 @@
+using Employee360.Application.Common.Models;
 using Employee360.Application.Features.Employees.CreateEmployee;
 using Employee360.Application.Features.Recruitment.Candidates;
 using Employee360.Domain.Constants;
@@ -14,12 +15,15 @@ public sealed class CandidatesController : ApiControllerBase
 {
     [HttpGet]
     [HasPermission(Permissions.Recruitment.Manage)]
-    [ProducesResponseType(typeof(IReadOnlyList<CandidateDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<CandidateDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> List(
-        [FromQuery] Guid? jobPostingId,
-        [FromQuery] CandidateStage? stage,
-        CancellationToken cancellationToken)
-        => FromResult(await Sender.Send(new GetCandidatesQuery(jobPostingId, stage), cancellationToken));
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] Guid? jobPostingId = null,
+        [FromQuery] CandidateStage? stage = null,
+        CancellationToken cancellationToken = default)
+        => FromResult(await Sender.Send(
+            new GetCandidatesQuery(page, pageSize, jobPostingId, stage), cancellationToken));
 
     [HttpGet("{id:guid}")]
     [HasPermission(Permissions.Recruitment.Manage)]

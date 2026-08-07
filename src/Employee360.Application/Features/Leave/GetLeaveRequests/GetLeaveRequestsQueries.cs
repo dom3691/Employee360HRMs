@@ -1,3 +1,4 @@
+using Employee360.Application.Common.Models;
 using Employee360.Domain.Common;
 using Employee360.Domain.Enums;
 using MediatR;
@@ -19,14 +20,20 @@ public sealed record LeaveRequestItem(
     DateTime SubmittedAtUtc);
 
 /// <summary>The authenticated employee's own requests, optionally by year.</summary>
-public sealed record GetMyLeaveRequestsQuery(int? Year = null)
-    : IRequest<Result<IReadOnlyList<LeaveRequestItem>>>;
+public sealed record GetMyLeaveRequestsQuery(
+    int Page = 1,
+    int PageSize = 20,
+    int? Year = null)
+    : IRequest<Result<PagedResult<LeaveRequestItem>>>;
 
 /// <summary>
 /// Pending/escalated requests awaiting the authenticated manager — direct
 /// assignments plus anything in their reporting subtree (FR-AUTH-008 scope).
 /// </summary>
-public sealed record GetApprovalQueueQuery : IRequest<Result<IReadOnlyList<LeaveRequestItem>>>;
+public sealed record GetApprovalQueueQuery(
+    int Page = 1,
+    int PageSize = 20)
+    : IRequest<Result<PagedResult<LeaveRequestItem>>>;
 
 /// <summary>A calendar entry for team leave (FR-LV-010).</summary>
 public sealed record TeamCalendarEntry(

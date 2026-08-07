@@ -1,3 +1,4 @@
+using Employee360.Application.Common.Models;
 using Employee360.Application.Features.Performance.Feedback;
 using Employee360.Application.Features.Performance.Goals;
 using Employee360.Application.Features.Performance.ReviewCycles;
@@ -67,13 +68,15 @@ public sealed class ReviewsController : ApiControllerBase
 
     [HttpGet]
     [HasPermission(Permissions.Performance.ManageTeamReviews)]
-    [ProducesResponseType(typeof(IReadOnlyList<PerformanceReviewDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<PerformanceReviewDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ListReviews(
-        [FromQuery] Guid? reviewCycleId,
-        [FromQuery] Guid? employeeId,
-        CancellationToken cancellationToken)
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] Guid? reviewCycleId = null,
+        [FromQuery] Guid? employeeId = null,
+        CancellationToken cancellationToken = default)
         => FromResult(await Sender.Send(
-            new GetPerformanceReviewsQuery(reviewCycleId, employeeId), cancellationToken));
+            new GetPerformanceReviewsQuery(page, pageSize, reviewCycleId, employeeId), cancellationToken));
 
     [HttpPost("{id:guid}/self-assessment")]
     [HasPermission(Permissions.Employees.ViewOwnProfile)]

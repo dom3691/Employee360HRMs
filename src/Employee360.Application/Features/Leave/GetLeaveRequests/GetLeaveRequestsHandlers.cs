@@ -1,4 +1,6 @@
+using Employee360.Application.Common.Extensions;
 using Employee360.Application.Common.Interfaces;
+using Employee360.Application.Common.Models;
 using Employee360.Domain.Common;
 using Employee360.Domain.Enums;
 using Employee360.Domain.Interfaces;
@@ -9,7 +11,7 @@ namespace Employee360.Application.Features.Leave.GetLeaveRequests;
 
 /// <summary>Handles <see cref="GetMyLeaveRequestsQuery"/>.</summary>
 public sealed class GetMyLeaveRequestsHandler
-    : IRequestHandler<GetMyLeaveRequestsQuery, Result<IReadOnlyList<LeaveRequestItem>>>
+    : IRequestHandler<GetMyLeaveRequestsQuery, Result<PagedResult<LeaveRequestItem>>>
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
@@ -21,7 +23,7 @@ public sealed class GetMyLeaveRequestsHandler
     }
 
     /// <inheritdoc />
-    public async Task<Result<IReadOnlyList<LeaveRequestItem>>> Handle(
+    public async Task<Result<PagedResult<LeaveRequestItem>>> Handle(
         GetMyLeaveRequestsQuery request,
         CancellationToken cancellationToken)
     {
@@ -29,7 +31,7 @@ public sealed class GetMyLeaveRequestsHandler
 
         if (employeeId is null)
         {
-            return Result.Failure<IReadOnlyList<LeaveRequestItem>>(
+            return Result.Failure<PagedResult<LeaveRequestItem>>(
                 "No employee record is linked to your account.");
         }
 
@@ -42,7 +44,7 @@ public sealed class GetMyLeaveRequestsHandler
             query = query.Where(r => r.StartDate.Year == request.Year.Value);
         }
 
-        var items = await query
+        var projected = query
             .OrderByDescending(r => r.CreatedAt)
             .Select(r => new LeaveRequestItem(
                 r.Id,
@@ -55,16 +57,16 @@ public sealed class GetMyLeaveRequestsHandler
                 r.Reason,
                 r.Status,
                 r.Approver != null ? r.Approver.FirstName + " " + r.Approver.LastName : null,
-                r.CreatedAt))
-            .ToListAsync(cancellationToken);
+                r.CreatedAt));
 
-        return Result.Success<IReadOnlyList<LeaveRequestItem>>(items);
+        return Result.Success(await projected.ToPagedResultAsync(
+            request.Page, request.PageSize, cancellationToken));
     }
 }
 
 /// <summary>Handles <see cref="GetApprovalQueueQuery"/> (manager-scoped).</summary>
 public sealed class GetApprovalQueueHandler
-    : IRequestHandler<GetApprovalQueueQuery, Result<IReadOnlyList<LeaveRequestItem>>>
+    : IRequestHandler<GetApprovalQueueQuery, Result<PagedResult<LeaveRequestItem>>>
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
@@ -81,7 +83,7 @@ public sealed class GetApprovalQueueHandler
     }
 
     /// <inheritdoc />
-    public async Task<Result<IReadOnlyList<LeaveRequestItem>>> Handle(
+    public async Task<Result<PagedResult<LeaveRequestItem>>> Handle(
         GetApprovalQueueQuery request,
         CancellationToken cancellationToken)
     {
@@ -89,7 +91,7 @@ public sealed class GetApprovalQueueHandler
 
         if (employeeId is null)
         {
-            return Result.Failure<IReadOnlyList<LeaveRequestItem>>(
+            return Result.Failure<PagedResult<LeaveRequestItem>>(
                 "No employee record is linked to your account.");
         }
 
@@ -97,7 +99,7 @@ public sealed class GetApprovalQueueHandler
             employeeId.Value, includeIndirect: true, cancellationToken);
         var managedSet = managedIds.ToList();
 
-        var items = await _context.LeaveRequests
+        var projected = _context.LeaveRequests
             .AsNoTracking()
             .Where(r =>
                 (r.Status == LeaveRequestStatus.Pending || r.Status == LeaveRequestStatus.Escalated) &&
@@ -114,10 +116,10 @@ public sealed class GetApprovalQueueHandler
                 r.Reason,
                 r.Status,
                 r.Approver != null ? r.Approver.FirstName + " " + r.Approver.LastName : null,
-                r.CreatedAt))
-            .ToListAsync(cancellationToken);
+                r.CreatedAt));
 
-        return Result.Success<IReadOnlyList<LeaveRequestItem>>(items);
+        return Result.Success(await projected.ToPagedResultAsync(
+            request.Page, request.PageSize, cancellationToken));
     }
 }
 

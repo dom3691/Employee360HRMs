@@ -1,5 +1,7 @@
 using Employee360.Application.Common.Interfaces;
+using Employee360.Application.Common.Models;
 using Employee360.Application.Common.Services;
+using Employee360.Application.Common.Validation;
 using Employee360.Application.Features.Employees.CreateEmployee;
 using Employee360.Domain.Common;
 using Employee360.Domain.Constants;
@@ -112,16 +114,27 @@ public sealed class ApplyForJobHandler : IRequestHandler<ApplyForJobCommand, Res
 }
 
 public sealed record GetCandidatesQuery(
-    Guid? JobPostingId,
-    CandidateStage? Stage) : IRequest<Result<IReadOnlyList<CandidateDto>>>;
+    int Page = 1,
+    int PageSize = 20,
+    Guid? JobPostingId = null,
+    CandidateStage? Stage = null) : IRequest<Result<PagedResult<CandidateDto>>>;
 
-public sealed class GetCandidatesHandler : IRequestHandler<GetCandidatesQuery, Result<IReadOnlyList<CandidateDto>>>
+public sealed class GetCandidatesValidator : AbstractValidator<GetCandidatesQuery>
+{
+    public GetCandidatesValidator()
+    {
+        RuleFor(q => q.Page).ValidPage();
+        RuleFor(q => q.PageSize).ValidPageSize();
+    }
+}
+
+public sealed class GetCandidatesHandler : IRequestHandler<GetCandidatesQuery, Result<PagedResult<CandidateDto>>>
 {
     private readonly IApplicationDbContext _context;
 
     public GetCandidatesHandler(IApplicationDbContext context) => _context = context;
 
-    public async Task<Result<IReadOnlyList<CandidateDto>>> Handle(
+    public async Task<Result<PagedResult<CandidateDto>>> Handle(
         GetCandidatesQuery request,
         CancellationToken cancellationToken)
     {
@@ -137,8 +150,12 @@ public sealed class GetCandidatesHandler : IRequestHandler<GetCandidatesQuery, R
             query = query.Where(c => c.Stage == request.Stage.Value);
         }
 
+        var total = await query.CountAsync(cancellationToken);
+
         var items = await query
             .OrderByDescending(c => c.CreatedAt)
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
             .Select(c => new CandidateDto(
                 c.Id,
                 c.JobPostingId,
@@ -151,7 +168,8 @@ public sealed class GetCandidatesHandler : IRequestHandler<GetCandidatesQuery, R
                 c.EmployeeId))
             .ToListAsync(cancellationToken);
 
-        return Result.Success<IReadOnlyList<CandidateDto>>(items);
+        return Result.Success(new PagedResult<CandidateDto>(
+            items, request.Page, request.PageSize, total));
     }
 }
 

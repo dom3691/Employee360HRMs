@@ -1,7 +1,11 @@
+using Employee360.Application.Common.Extensions;
 using Employee360.Application.Common.Interfaces;
+using Employee360.Application.Common.Models;
+using Employee360.Application.Common.Validation;
 using Employee360.Application.Features.SelfService.GetEssDashboard;
 using Employee360.Domain.Common;
 using Employee360.Domain.Interfaces;
+using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,14 +16,27 @@ namespace Employee360.Application.Features.Notifications;
 // ---------------------------------------------------------------------------
 
 /// <summary>Lists the authenticated user's notifications, newest first.</summary>
+/// <param name="Page">1-based page number.</param>
+/// <param name="PageSize">Page size (max 100).</param>
 /// <param name="UnreadOnly">True to return only unread notifications.</param>
-/// <param name="Take">Maximum rows (default 20, max 100).</param>
-public sealed record GetMyNotificationsQuery(bool UnreadOnly = false, int Take = 20)
-    : IRequest<Result<IReadOnlyList<NotificationSummary>>>;
+public sealed record GetMyNotificationsQuery(
+    int Page = 1,
+    int PageSize = 20,
+    bool UnreadOnly = false)
+    : IRequest<Result<PagedResult<NotificationSummary>>>;
+
+public sealed class GetMyNotificationsValidator : AbstractValidator<GetMyNotificationsQuery>
+{
+    public GetMyNotificationsValidator()
+    {
+        RuleFor(q => q.Page).ValidPage();
+        RuleFor(q => q.PageSize).ValidPageSize();
+    }
+}
 
 /// <summary>Handles <see cref="GetMyNotificationsQuery"/>.</summary>
 public sealed class GetMyNotificationsHandler
-    : IRequestHandler<GetMyNotificationsQuery, Result<IReadOnlyList<NotificationSummary>>>
+    : IRequestHandler<GetMyNotificationsQuery, Result<PagedResult<NotificationSummary>>>
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
@@ -31,7 +48,7 @@ public sealed class GetMyNotificationsHandler
     }
 
     /// <inheritdoc />
-    public async Task<Result<IReadOnlyList<NotificationSummary>>> Handle(
+    public async Task<Result<PagedResult<NotificationSummary>>> Handle(
         GetMyNotificationsQuery request,
         CancellationToken cancellationToken)
     {
@@ -39,7 +56,7 @@ public sealed class GetMyNotificationsHandler
 
         if (userId is null)
         {
-            return Result.Failure<IReadOnlyList<NotificationSummary>>("Not authenticated.");
+            return Result.Failure<PagedResult<NotificationSummary>>("Not authenticated.");
         }
 
         var query = _context.Notifications
@@ -51,16 +68,13 @@ public sealed class GetMyNotificationsHandler
             query = query.Where(n => !n.IsRead);
         }
 
-        var take = Math.Clamp(request.Take, 1, 100);
-
-        var items = await query
+        var projected = query
             .OrderByDescending(n => n.CreatedAt)
-            .Take(take)
             .Select(n => new NotificationSummary(
-                n.Id, n.Title, n.Message, n.Link, n.IsRead, n.CreatedAt))
-            .ToListAsync(cancellationToken);
+                n.Id, n.Title, n.Message, n.Link, n.IsRead, n.CreatedAt));
 
-        return Result.Success<IReadOnlyList<NotificationSummary>>(items);
+        return Result.Success(await projected.ToPagedResultAsync(
+            request.Page, request.PageSize, cancellationToken));
     }
 }
 

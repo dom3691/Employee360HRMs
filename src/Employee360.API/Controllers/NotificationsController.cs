@@ -1,3 +1,4 @@
+using Employee360.Application.Common.Models;
 using Employee360.Application.Features.Notifications;
 using Employee360.Application.Features.SelfService.GetEssDashboard;
 using Microsoft.AspNetCore.Authorization;
@@ -12,13 +13,14 @@ public sealed class NotificationsController : ApiControllerBase
 {
     /// <summary>Lists the authenticated user's notifications (newest first).</summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyList<NotificationSummary>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<NotificationSummary>), StatusCodes.Status200OK)]
     public async Task<IActionResult> List(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
         [FromQuery] bool unreadOnly = false,
-        [FromQuery] int take = 20,
         CancellationToken cancellationToken = default)
         => FromResult(await Sender.Send(
-            new GetMyNotificationsQuery(unreadOnly, take), cancellationToken));
+            new GetMyNotificationsQuery(page, pageSize, unreadOnly), cancellationToken));
 
     /// <summary>Marks a notification as read (owner only).</summary>
     [HttpPut("{id:guid}/read")]

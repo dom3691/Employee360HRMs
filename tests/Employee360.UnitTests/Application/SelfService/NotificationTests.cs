@@ -96,9 +96,9 @@ public class NotificationTests
 
         var result = await handler.Handle(new GetMyNotificationsQuery(), default);
 
-        result.Value.Should().HaveCount(2);
-        result.Value[0].Title.Should().Be("New");
-        result.Value.Select(n => n.Title).Should().NotContain("NotMine");
+        result.Value!.Items.Should().HaveCount(2);
+        result.Value.Items[0].Title.Should().Be("New");
+        result.Value.Items.Select(n => n.Title).Should().NotContain("NotMine");
     }
 
     [Fact]
@@ -115,7 +115,7 @@ public class NotificationTests
 
         var result = await handler.Handle(new GetMyNotificationsQuery(UnreadOnly: true), default);
 
-        result.Value.Should().ContainSingle().Which.Title.Should().Be("Unread");
+        result.Value!.Items.Should().ContainSingle().Which.Title.Should().Be("Unread");
     }
 
     [Fact]
