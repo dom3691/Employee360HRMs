@@ -4,7 +4,7 @@ namespace Employee360.Application.Common.Models;
 /// <typeparam name="T">The item type.</typeparam>
 /// <param name="Items">The current page of items.</param>
 /// <param name="Page">1-based page number.</param>
-/// <param name="PageSize">Requested page size.</param>
+/// <param name="PageSize">Requested page size (max <see cref="PaginationConstants.MaxPageSize"/>).</param>
 /// <param name="TotalCount">Total matching items across all pages.</param>
 public sealed record PagedResult<T>(
     IReadOnlyList<T> Items,
