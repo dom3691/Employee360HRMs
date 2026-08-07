@@ -11,6 +11,6 @@ public sealed class GetGradesPagedValidator : AbstractValidator<GetGradesPagedQu
             .GreaterThanOrEqualTo(1).WithMessage("Page must be 1 or greater.");
 
         RuleFor(q => q.PageSize)
-            .InclusiveBetween(1, 100).WithMessage("Page size must be between 1 and 100.");
+            .InclusiveBetween(1, 200).WithMessage("Page size must be between 1 and 200.");
     }
 }
