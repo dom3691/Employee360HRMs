@@ -25,4 +25,8 @@ public interface ICurrentUserService
     /// <summary>Returns true when the current user holds <paramref name="role"/>.</summary>
     /// <param name="role">Role name to test.</param>
     bool IsInRole(string role);
+
+    /// <summary>Returns true when the current user has the given permission claim.</summary>
+    /// <param name="permission">Permission name from the permissions catalog.</param>
+    bool HasPermission(string permission);
 }
