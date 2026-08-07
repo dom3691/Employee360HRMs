@@ -3,8 +3,7 @@ using Employee360.Domain.Constants;
 namespace Employee360.Application.Common.Authorization;
 
 /// <summary>
-/// Maps between the UI permission matrix (module × view/create/edit/delete/approve)
-/// and the backend's flat permission name catalog.
+/// Maps between the UI permission matrix and the backend flat permission catalog.
 /// </summary>
 public static class RolePermissionMatrixMapper
 {
@@ -23,6 +22,66 @@ public static class RolePermissionMatrixMapper
 
     private static readonly Dictionary<string, ModulePermissionFlags> EmptyMatrix =
         ModuleIds.ToDictionary(m => m, _ => new ModulePermissionFlags(false, false, false, false, false));
+
+    private static readonly Dictionary<string, string[]> MatrixControlledPermissions =
+        new(StringComparer.Ordinal)
+        {
+            ["employees"] =
+            [
+                Permissions.Employees.ViewOwnProfile,
+                Permissions.Employees.ViewTeam,
+                Permissions.Employees.ViewAll,
+                Permissions.Employees.Create,
+                Permissions.Employees.Update,
+                Permissions.Employees.Deactivate,
+            ],
+            ["leave"] =
+            [
+                Permissions.Leave.Apply,
+                Permissions.Leave.ApproveTeam,
+                Permissions.Leave.ApproveAll,
+                Permissions.Leave.Configure,
+                Permissions.Leave.ViewTeamCalendar,
+            ],
+            ["payroll"] =
+            [
+                Permissions.Payroll.ViewOwnPayslips,
+                Permissions.Payroll.ManageSalaryStructures,
+                Permissions.Payroll.Run,
+                Permissions.Payroll.Approve,
+                Permissions.Payroll.ExportBankFile,
+            ],
+            ["recruitment"] = [Permissions.Recruitment.Manage],
+            ["performance"] =
+            [
+                Permissions.Performance.ManageTeamReviews,
+                Permissions.Performance.Manage,
+            ],
+            ["organization"] =
+            [
+                Permissions.Departments.View,
+                Permissions.Departments.Manage,
+                Permissions.Positions.View,
+                Permissions.Positions.Manage,
+                Permissions.Grades.View,
+                Permissions.Grades.Manage,
+            ],
+            ["administration"] =
+            [
+                Permissions.Administration.ManageRoles,
+                Permissions.Administration.ViewAuditLogs,
+                Permissions.Administration.SystemConfiguration,
+            ],
+            ["reports"] =
+            [
+                Permissions.Reports.ViewHR,
+                Permissions.Reports.ViewExecutive,
+            ],
+        };
+
+    private static readonly HashSet<string> AllMatrixControlled = MatrixControlledPermissions
+        .SelectMany(kvp => kvp.Value)
+        .ToHashSet(StringComparer.Ordinal);
 
     /// <summary>Builds the UI matrix from granted permission names.</summary>
     public static IReadOnlyDictionary<string, ModulePermissionFlags> ToMatrix(IEnumerable<string> permissionNames)
@@ -90,6 +149,60 @@ public static class RolePermissionMatrixMapper
         }
 
         return matrix;
+    }
+
+    /// <summary>
+    /// Merges an incoming UI matrix with existing permissions, preserving granular
+    /// grants for modules whose flags did not change.
+    /// </summary>
+    public static IReadOnlyList<string> MergeMatrixPermissions(
+        IEnumerable<string> existingPermissionNames,
+        IReadOnlyDictionary<string, ModulePermissionFlags>? incomingMatrix)
+    {
+        var existing = existingPermissionNames.ToHashSet(StringComparer.Ordinal);
+        var currentMatrix = ToMatrix(existing);
+        var incoming = incomingMatrix ?? CreateEmptyMatrix();
+        var result = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var permission in existing)
+        {
+            if (!AllMatrixControlled.Contains(permission))
+            {
+                result.Add(permission);
+            }
+        }
+
+        foreach (var moduleId in ModuleIds)
+        {
+            var currentFlags = currentMatrix[moduleId];
+            incoming.TryGetValue(moduleId, out var incomingFlags);
+            incomingFlags ??= EmptyMatrix[moduleId];
+
+            if (FlagsEqual(currentFlags, incomingFlags))
+            {
+                foreach (var permission in MatrixControlledPermissions[moduleId])
+                {
+                    if (existing.Contains(permission))
+                    {
+                        result.Add(permission);
+                    }
+                }
+            }
+            else
+            {
+                var moduleMatrix = new Dictionary<string, ModulePermissionFlags>(StringComparer.Ordinal)
+                {
+                    [moduleId] = incomingFlags,
+                };
+
+                foreach (var permission in FromMatrix(moduleMatrix))
+                {
+                    result.Add(permission);
+                }
+            }
+        }
+
+        return result.OrderBy(p => p).ToList();
     }
 
     /// <summary>Converts a UI matrix to the flat permission names to persist.</summary>
@@ -192,4 +305,11 @@ public static class RolePermissionMatrixMapper
 
     private static bool HasAny(HashSet<string> granted, params string[] names)
         => names.Any(granted.Contains);
+
+    private static bool FlagsEqual(ModulePermissionFlags left, ModulePermissionFlags right)
+        => left.View == right.View
+           && left.Create == right.Create
+           && left.Edit == right.Edit
+           && left.Delete == right.Delete
+           && left.Approve == right.Approve;
 }
