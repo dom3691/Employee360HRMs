@@ -28,8 +28,7 @@ namespace Employee360.Infrastructure.Migrations
                 table: "Grades",
                 type: "character varying(16)",
                 maxLength: 16,
-                nullable: false,
-                defaultValue: "");
+                nullable: true);
 
             migrationBuilder.AddColumn<string>(
                 name: "Description",
@@ -43,8 +42,7 @@ namespace Employee360.Infrastructure.Migrations
                 table: "Grades",
                 type: "character varying(32)",
                 maxLength: 32,
-                nullable: false,
-                defaultValue: "");
+                nullable: true);
 
             migrationBuilder.AddColumn<string>(
                 name: "CurrentTitle",
@@ -67,6 +65,25 @@ namespace Employee360.Infrastructure.Migrations
                 type: "text",
                 nullable: true);
 
+            migrationBuilder.Sql("""UPDATE "Grades" SET "Code" = 'G' || "Level"::text WHERE "Code" IS NULL;""");
+            migrationBuilder.Sql("""UPDATE "Grades" SET "LevelRank" = 'Level ' || "Level"::text WHERE "LevelRank" IS NULL;""");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "Code",
+                table: "Grades",
+                type: "character varying(16)",
+                maxLength: 16,
+                nullable: false,
+                defaultValue: "");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "LevelRank",
+                table: "Grades",
+                type: "character varying(32)",
+                maxLength: 32,
+                nullable: false,
+                defaultValue: "");
+
             migrationBuilder.CreateIndex(
                 name: "IX_Grades_Code",
                 table: "Grades",
@@ -75,14 +92,13 @@ namespace Employee360.Infrastructure.Migrations
 
             // CandidateStage.Assessment inserted at value 3 — shift Offer/Hired/Rejected up by one.
             migrationBuilder.Sql("""UPDATE "Candidates" SET "Stage" = "Stage" + 1 WHERE "Stage" >= 3;""");
-
-            migrationBuilder.Sql("""UPDATE "Grades" SET "Code" = 'G' || "Level"::text WHERE "Code" = '';""");
-            migrationBuilder.Sql("""UPDATE "Grades" SET "LevelRank" = 'Level ' || "Level"::text WHERE "LevelRank" = '';""");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.Sql("""UPDATE "Candidates" SET "Stage" = "Stage" - 1 WHERE "Stage" >= 4;""");
+
             migrationBuilder.DropIndex(
                 name: "IX_Grades_Code",
                 table: "Grades");

@@ -47,4 +47,8 @@ public sealed class CurrentUserService : ICurrentUserService
 
     /// <inheritdoc />
     public bool IsInRole(string role) => Principal?.IsInRole(role) ?? false;
+
+    /// <inheritdoc />
+    public bool HasPermission(string permission) =>
+        Principal?.HasClaim(JwtTokenService.PermissionClaimType, permission) ?? false;
 }
