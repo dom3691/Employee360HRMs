@@ -9,6 +9,8 @@ public class CandidatePipelineWorkflowTests
     [Theory]
     [InlineData(CandidateStage.Applied, CandidateStage.Screening, true)]
     [InlineData(CandidateStage.Screening, CandidateStage.Interview, true)]
+    [InlineData(CandidateStage.Interview, CandidateStage.Assessment, true)]
+    [InlineData(CandidateStage.Assessment, CandidateStage.Offer, true)]
     [InlineData(CandidateStage.Interview, CandidateStage.Offer, true)]
     [InlineData(CandidateStage.Offer, CandidateStage.Hired, true)]
     [InlineData(CandidateStage.Applied, CandidateStage.Rejected, true)]
