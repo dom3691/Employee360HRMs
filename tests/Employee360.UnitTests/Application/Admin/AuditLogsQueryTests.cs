@@ -13,6 +13,40 @@ public class AuditLogsQueryTests
     private static readonly Guid UserB = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
     [Fact]
+    public async Task GetAuditLogsPaged_FiltersByModuleBeforePagination()
+    {
+        await using var context = CreateContext();
+        SeedAuditLogs(context);
+
+        var handler = new GetAuditLogsPagedHandler(context);
+
+        var result = await handler.Handle(
+            new GetAuditLogsPagedQuery(Page: 1, PageSize: 10, Module: "Leave"),
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Items.Should().BeEmpty();
+        result.Value.TotalCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task GetAuditLogsPaged_FiltersByNormalizedAction()
+    {
+        await using var context = CreateContext();
+        SeedAuditLogs(context);
+
+        var handler = new GetAuditLogsPagedHandler(context);
+
+        var result = await handler.Handle(
+            new GetAuditLogsPagedQuery(Page: 1, PageSize: 10, Action: "Update"),
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Items.Should().HaveCount(1);
+        result.Value.Items[0].Action.Should().Be("Update");
+    }
+
+    [Fact]
     public async Task GetAuditLogsPaged_FiltersByUserEntityAndDateRange()
     {
         await using var context = CreateContext();
