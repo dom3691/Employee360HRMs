@@ -98,8 +98,33 @@ public sealed class GetAuditLogsPagedHandler
 
         if (!string.IsNullOrWhiteSpace(request.Action))
         {
-            var action = request.Action.Trim();
-            query = query.Where(a => a.Action == action);
+            var dbActions = ResolveDbActions(request.Action.Trim());
+            query = query.Where(a => dbActions.Contains(a.Action));
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Module))
+        {
+            var entityNames = ResolveEntityNamesForModule(request.Module.Trim());
+            if (entityNames.Count == 0)
+            {
+                return Result.Success(new PagedResult<AuditLogListItem>(
+                    Array.Empty<AuditLogListItem>(), request.Page, request.PageSize, 0));
+            }
+
+            query = query.Where(a => entityNames.Contains(a.EntityName));
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Outcome))
+        {
+            var outcome = request.Outcome.Trim();
+            if (outcome.Equals("Failure", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(a => a.Action.Contains("Fail"));
+            }
+            else if (outcome.Equals("Success", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(a => !a.Action.Contains("Fail"));
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(request.Search))
@@ -137,21 +162,41 @@ public sealed class GetAuditLogsPagedHandler
 
         var items = rows.Select(r => MapItem(r.Log, r.User)).ToList();
 
-        if (!string.IsNullOrWhiteSpace(request.Module))
-        {
-            var module = request.Module.Trim();
-            items = items.Where(i => i.Module.Equals(module, StringComparison.OrdinalIgnoreCase)).ToList();
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.Outcome))
-        {
-            var outcome = request.Outcome.Trim();
-            items = items.Where(i => i.Outcome.Equals(outcome, StringComparison.OrdinalIgnoreCase)).ToList();
-        }
-
         return Result.Success(new PagedResult<AuditLogListItem>(
             items, request.Page, request.PageSize, totalCount));
     }
+
+    internal static IReadOnlyList<string> ResolveDbActions(string apiAction) => apiAction switch
+    {
+        "Create" => ["Created"],
+        "Update" => ["Updated", "PermissionsUpdated"],
+        "Delete" => ["Deleted"],
+        _ => [apiAction, DenormalizeAction(apiAction)],
+    };
+
+    private static string DenormalizeAction(string action) => action switch
+    {
+        "Create" => "Created",
+        "Update" => "Updated",
+        "Delete" => "Deleted",
+        _ => action,
+    };
+
+    internal static IReadOnlyList<string> ResolveEntityNamesForModule(string module) =>
+        module.ToLowerInvariant() switch
+        {
+            "leave" => ["LeaveRequest", "LeaveType", "LeavePolicy", "PublicHoliday"],
+            "employee" => ["Employee", "EmployeeDocument", "ProfileChangeRequest"],
+            "payroll" => ["PayrollRun", "Payslip", "SalaryStructure"],
+            "recruitment" => ["JobPosting", "Candidate"],
+            "performance" => ["PerformanceReview", "ReviewCycle", "EmployeeGoal"],
+            "organization" => ["Department", "Position", "Grade", "Company"],
+            "roles" => ["Role", "UserRole", "EmailTemplate"],
+            "auth" => ["User", "RefreshToken"],
+            "audit" => ["AuditLog"],
+            "system" => ["AuditLog"],
+            _ => Array.Empty<string>(),
+        };
 
     internal static AuditLogListItem MapItem(AuditLog log, User? user)
     {
