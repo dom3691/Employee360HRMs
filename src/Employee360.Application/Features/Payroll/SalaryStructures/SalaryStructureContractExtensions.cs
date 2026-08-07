@@ -31,6 +31,14 @@ public sealed class UpdateSalaryStructureComponentsValidator : AbstractValidator
         RuleFor(c => c.Name).NotEmpty().MaximumLength(128);
         RuleFor(c => c.GrossMonthly).GreaterThan(0);
         RuleFor(c => c.Components).NotEmpty();
+        RuleFor(c => c.Components)
+            .Must(components => components.Sum(c => c.Percentage) is >= 99m and <= 101m)
+            .WithMessage("Component percentages must sum to approximately 100.");
+        RuleForEach(c => c.Components).ChildRules(component =>
+        {
+            component.RuleFor(x => x.Name).NotEmpty().MaximumLength(128);
+            component.RuleFor(x => x.Percentage).GreaterThan(0).LessThanOrEqualTo(100);
+        });
     }
 }
 

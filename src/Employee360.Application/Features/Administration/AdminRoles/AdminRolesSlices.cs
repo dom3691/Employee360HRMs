@@ -1,6 +1,7 @@
 using Employee360.Application.Common.Authorization;
 using Employee360.Application.Common.Interfaces;
 using Employee360.Domain.Common;
+using Employee360.Domain.Constants;
 using Employee360.Domain.Entities;
 using Employee360.Domain.Interfaces;
 using FluentValidation;
@@ -104,7 +105,39 @@ public sealed class UpdateAdminRolePermissionsHandler
             return Result.Failure<SystemRoleDefinitionDto>("Role not found.");
         }
 
-        var requestedNames = RolePermissionMatrixMapper.FromMatrix(request.Permissions);
+        var oldPermissionNames = role.RolePermissions
+            .Select(rp => rp.Permission.Name)
+            .ToList();
+
+        var requestedNames = RolePermissionMatrixMapper.MergeMatrixPermissions(
+            oldPermissionNames,
+            request.Permissions);
+
+        if (role.IsSystemRole && requestedNames.Count == 0)
+        {
+            return Result.Failure<SystemRoleDefinitionDto>(
+                "System roles must retain at least one permission.");
+        }
+
+        if (role.IsSystemRole &&
+            role.Name.Equals(RoleNames.SystemAdmin, StringComparison.Ordinal) &&
+            !requestedNames.Contains(Permissions.Administration.ManageRoles))
+        {
+            return Result.Failure<SystemRoleDefinitionDto>(
+                "SystemAdmin must retain Administration.ManageRoles.");
+        }
+
+        if (_currentUserService.UserId.HasValue &&
+            oldPermissionNames.Contains(Permissions.Administration.ManageRoles) &&
+            !requestedNames.Contains(Permissions.Administration.ManageRoles))
+        {
+            var actorHasRole = role.UserRoles.Any(ur => ur.UserId == _currentUserService.UserId.Value);
+            if (actorHasRole)
+            {
+                return Result.Failure<SystemRoleDefinitionDto>(
+                    "You cannot remove Administration.ManageRoles from a role assigned to your account.");
+            }
+        }
 
         var catalog = await _context.Permissions
             .Where(p => requestedNames.Contains(p.Name))
@@ -116,11 +149,6 @@ public sealed class UpdateAdminRolePermissionsHandler
             return Result.Failure<SystemRoleDefinitionDto>(
                 $"Unknown permissions: {string.Join(", ", unknown)}.");
         }
-
-        var oldPermissionNames = role.RolePermissions
-            .Select(rp => rp.Permission.Name)
-            .OrderBy(n => n)
-            .ToList();
 
         _context.RolePermissions.RemoveRange(role.RolePermissions);
 
