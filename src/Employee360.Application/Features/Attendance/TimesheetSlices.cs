@@ -294,9 +294,7 @@ public sealed class GetTimesheetsHandler : IRequestHandler<GetTimesheetsQuery, R
         {
             query = query.Where(t => t.EmployeeId == request.EmployeeId.Value);
         }
-        else if (!(_currentUser.IsInRole(RoleNames.HRAdmin) ||
-                   _currentUser.IsInRole(RoleNames.HRManager) ||
-                   _currentUser.IsInRole(RoleNames.SystemAdmin)))
+        else if (!_currentUser.HasPermission(Permissions.Attendance.Manage))
         {
             var employeeId = _currentUser.EmployeeId;
             if (employeeId is null)

@@ -63,11 +63,25 @@ public sealed class GetGoalsPagedHandler : IRequestHandler<GetGoalsPagedQuery, R
         GetGoalsPagedQuery request,
         CancellationToken cancellationToken)
     {
+        const string defaultCategory = "Performance";
+
+        if (!string.IsNullOrWhiteSpace(request.Category) &&
+            !request.Category.Trim().Equals(defaultCategory, StringComparison.OrdinalIgnoreCase))
+        {
+            return Result.Success(new PagedResult<EmployeeGoalDto>(
+                Array.Empty<EmployeeGoalDto>(), request.Page, request.PageSize, 0));
+        }
+
         var query = _context.EmployeeGoals.AsNoTracking();
 
         if (request.EmployeeId.HasValue)
         {
             query = query.Where(g => g.EmployeeId == request.EmployeeId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Status))
+        {
+            query = ApplyStatusFilter(query, request.Status.Trim());
         }
 
         var projected = query
@@ -91,41 +105,91 @@ public sealed class GetGoalsPagedHandler : IRequestHandler<GetGoalsPagedQuery, R
 
         var paged = await projected.ToPagedResultAsync(request.Page, request.PageSize, cancellationToken);
 
-        var items = paged.Items.Select(g =>
-        {
-            var achievement = g.TargetValue > 0 && g.ActualValue.HasValue
-                ? Math.Round(Math.Min(g.ActualValue.Value / g.TargetValue, 1m) * 100m, 2, MidpointRounding.AwayFromZero)
-                : (decimal?)null;
-
-            var status = achievement switch
-            {
-                >= 100 => "Complete",
-                >= 70 => "OnTrack",
-                >= 40 => "AtRisk",
-                _ => "Behind",
-            };
-
-            return new EmployeeGoalDto(
-                g.Id,
-                g.ReviewCycleId,
-                g.CycleName,
-                g.EmployeeId,
-                g.EmployeeName,
-                g.DepartmentName,
-                g.Title,
-                g.Description,
-                request.Category ?? "Performance",
-                request.Status ?? status,
-                g.Weight,
-                g.CycleEndDate,
-                g.TargetValue.ToString("0.##"),
-                g.ActualValue?.ToString("0.##"),
-                achievement,
-                null);
-        }).ToList();
+        var items = paged.Items.Select(g => MapGoal(
+            g.Id,
+            g.ReviewCycleId,
+            g.CycleName,
+            g.EmployeeId,
+            g.EmployeeName,
+            g.DepartmentName,
+            g.Title,
+            g.Description,
+            g.Weight,
+            g.TargetValue,
+            g.ActualValue,
+            g.CycleEndDate)).ToList();
 
         return Result.Success(new PagedResult<EmployeeGoalDto>(
             items, paged.Page, paged.PageSize, paged.TotalCount));
+    }
+
+    private static IQueryable<EmployeeGoal> ApplyStatusFilter(IQueryable<EmployeeGoal> query, string status)
+        => status switch
+        {
+            "Complete" => query.Where(g =>
+                g.TargetValue > 0 &&
+                g.ActualValue.HasValue &&
+                g.ActualValue.Value / g.TargetValue >= 1m),
+            "OnTrack" => query.Where(g =>
+                g.TargetValue > 0 &&
+                g.ActualValue.HasValue &&
+                g.ActualValue.Value / g.TargetValue >= 0.7m &&
+                g.ActualValue.Value / g.TargetValue < 1m),
+            "AtRisk" => query.Where(g =>
+                g.TargetValue > 0 &&
+                g.ActualValue.HasValue &&
+                g.ActualValue.Value / g.TargetValue >= 0.4m &&
+                g.ActualValue.Value / g.TargetValue < 0.7m),
+            "Behind" => query.Where(g =>
+                g.TargetValue <= 0 ||
+                !g.ActualValue.HasValue ||
+                g.ActualValue.Value / g.TargetValue < 0.4m),
+            _ => query,
+        };
+
+    internal static EmployeeGoalDto MapGoal(
+        Guid id,
+        Guid reviewCycleId,
+        string cycleName,
+        Guid employeeId,
+        string? employeeName,
+        string? departmentName,
+        string title,
+        string? description,
+        decimal weight,
+        decimal targetValue,
+        decimal? actualValue,
+        DateOnly cycleEndDate)
+    {
+        var achievement = targetValue > 0 && actualValue.HasValue
+            ? Math.Round(Math.Min(actualValue.Value / targetValue, 1m) * 100m, 2, MidpointRounding.AwayFromZero)
+            : (decimal?)null;
+
+        var status = achievement switch
+        {
+            >= 100 => "Complete",
+            >= 70 => "OnTrack",
+            >= 40 => "AtRisk",
+            _ => "Behind",
+        };
+
+        return new EmployeeGoalDto(
+            id,
+            reviewCycleId,
+            cycleName,
+            employeeId,
+            employeeName,
+            departmentName,
+            title,
+            description,
+            "Performance",
+            status,
+            weight,
+            cycleEndDate,
+            targetValue.ToString("0.##"),
+            actualValue?.ToString("0.##"),
+            achievement,
+            null);
     }
 }
 
