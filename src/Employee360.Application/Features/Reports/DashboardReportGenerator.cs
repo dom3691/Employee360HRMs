@@ -16,9 +16,7 @@ public static class DashboardReportGenerator
         var attrition = await AttritionReportGenerator.GenerateAsync(context, range, cancellationToken);
         var payrollCost = await PayrollReportGenerator.GenerateCostByDepartmentAsync(context, range, cancellationToken);
 
-        var employees = await context.Employees
-            .AsNoTracking()
-            .Where(e => ReportQueryHelpers.IsActiveHeadcount(e.Status))
+        var employees = await ReportQueryHelpers.ActiveEmployees(context)
             .Select(e => e.Gender)
             .ToListAsync(cancellationToken);
 

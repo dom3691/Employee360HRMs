@@ -12,10 +12,8 @@ public static class HeadcountReportGenerator
         ReportDateRange range,
         CancellationToken cancellationToken)
     {
-        var employees = await context.Employees
-            .AsNoTracking()
+        var employees = await ReportQueryHelpers.ActiveEmployees(context)
             .Include(e => e.Department)
-            .Where(e => ReportQueryHelpers.IsActiveHeadcount(e.Status))
             .ToListAsync(cancellationToken);
 
         var byDepartment = employees

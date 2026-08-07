@@ -41,5 +41,8 @@ public static class ReportQueryHelpers
     }
 
     public static IQueryable<Domain.Entities.Employee> ActiveEmployees(IApplicationDbContext context) =>
-        context.Employees.AsNoTracking().Where(e => IsActiveHeadcount(e.Status));
+        context.Employees.AsNoTracking().Where(e =>
+            e.Status == EmployeeStatus.Active ||
+            e.Status == EmployeeStatus.OnLeave ||
+            e.Status == EmployeeStatus.Suspended);
 }
