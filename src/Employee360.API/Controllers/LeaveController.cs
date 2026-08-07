@@ -6,10 +6,12 @@ using Employee360.Application.Features.Leave.ConfigureLeavePolicy;
 using Employee360.Application.Features.Leave.CreateLeaveType;
 using Employee360.Application.Features.Leave.GetLeaveBalances;
 using Employee360.Application.Features.Leave.GetLeaveRequests;
+using Employee360.Application.Features.Leave.Policies;
 using Employee360.Application.Features.Leave.PublicHolidays;
 using Employee360.Application.Features.Leave.RejectLeave;
 using Employee360.Application.Features.Leave.ReturnLeaveForRevision;
 using Employee360.Domain.Constants;
+using Employee360.Domain.Enums;
 using Employee360.Infrastructure.Identity.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -32,6 +34,22 @@ public sealed class LeaveController : ApiControllerBase
         [FromBody] ApplyLeaveCommand command,
         CancellationToken cancellationToken)
         => FromResult(await Sender.Send(command, cancellationToken));
+
+    /// <summary>Org-wide HR leave requests view.</summary>
+    [HttpGet("requests")]
+    [HasPermission(Permissions.Leave.ApproveAll)]
+    [ProducesResponseType(typeof(PagedResult<LeaveRequestItem>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> AllRequests(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] int? year = null,
+        [FromQuery] string? search = null,
+        [FromQuery] LeaveRequestStatus? status = null,
+        [FromQuery] string? leaveType = null,
+        CancellationToken cancellationToken = default)
+        => FromResult(await Sender.Send(
+            new GetAllLeaveRequestsQuery(page, pageSize, year, search, status, leaveType),
+            cancellationToken));
 
     /// <summary>Lists the authenticated employee's leave requests.</summary>
     [HttpGet("requests/mine")]
@@ -138,6 +156,45 @@ public sealed class LeaveController : ApiControllerBase
         => FromResult(await Sender.Send(new GetTeamLeaveCalendarQuery(from, to), cancellationToken));
 
     // -----------------------------------------------------------------------
+    // Leave policies (frontend contract)
+    // -----------------------------------------------------------------------
+
+    [HttpGet("policies")]
+    [HasPermission(Permissions.Leave.Configure)]
+    [ProducesResponseType(typeof(PagedResult<LeavePolicyDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListPolicies(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? search = null,
+        CancellationToken cancellationToken = default)
+        => FromResult(await Sender.Send(new GetLeavePoliciesQuery(page, pageSize, search), cancellationToken));
+
+    [HttpPost("policies")]
+    [HasPermission(Permissions.Leave.Configure)]
+    [ProducesResponseType(typeof(Guid), StatusCodes.Status200OK)]
+    public async Task<IActionResult> CreatePolicy(
+        [FromBody] UpsertLeavePolicyRequest body,
+        CancellationToken cancellationToken)
+        => FromResult(await Sender.Send(new CreateLeavePolicyCommand(body), cancellationToken));
+
+    [HttpPut("policies/{id:guid}")]
+    [HasPermission(Permissions.Leave.Configure)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> UpdatePolicy(
+        [FromRoute] Guid id,
+        [FromBody] UpsertLeavePolicyRequest body,
+        CancellationToken cancellationToken)
+        => FromResult(await Sender.Send(new UpdateLeavePolicyCommand(id, body), cancellationToken));
+
+    [HttpDelete("policies/{id:guid}")]
+    [HasPermission(Permissions.Leave.Configure)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> DeletePolicy(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken)
+        => FromResult(await Sender.Send(new DeleteLeavePolicyCommand(id), cancellationToken));
+
+    // -----------------------------------------------------------------------
     // Configuration (HR)
     // -----------------------------------------------------------------------
 
@@ -171,9 +228,32 @@ public sealed class LeaveController : ApiControllerBase
     [ProducesResponseType(typeof(Guid), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AddHoliday(
-        [FromBody] AddPublicHolidayCommand command,
+        [FromBody] AddHolidayRequest body,
         CancellationToken cancellationToken)
-        => FromResult(await Sender.Send(command, cancellationToken));
+        => FromResult(await Sender.Send(
+            new AddPublicHolidayCommand(body.Date, body.Name, body.Type, body.IsRecurring, body.Region),
+            cancellationToken));
+
+    /// <summary>Updates a public holiday by id.</summary>
+    [HttpPut("holidays/{id:guid}")]
+    [HasPermission(Permissions.Leave.Configure)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> UpdateHoliday(
+        [FromRoute] Guid id,
+        [FromBody] UpdateHolidayRequest body,
+        CancellationToken cancellationToken)
+        => FromResult(await Sender.Send(
+            new UpdatePublicHolidayCommand(id, body.Date, body.Name, body.Type, body.IsRecurring, body.Region),
+            cancellationToken));
+
+    /// <summary>Removes a public holiday by id.</summary>
+    [HttpDelete("holidays/{id:guid}")]
+    [HasPermission(Permissions.Leave.Configure)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> DeleteHolidayById(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken)
+        => FromResult(await Sender.Send(new DeletePublicHolidayByIdCommand(id), cancellationToken));
 
     /// <summary>Removes a public holiday by date (yyyy-MM-dd).</summary>
     [HttpDelete("holidays/{date}")]
@@ -188,13 +268,14 @@ public sealed class LeaveController : ApiControllerBase
     /// <summary>Lists public holidays for a year.</summary>
     [HttpGet("holidays")]
     [HasPermission(Permissions.Leave.Apply)]
-    [ResponseCache(Duration = 3600, Location = ResponseCacheLocation.Any, VaryByQueryKeys = new[] { "year" })]
+    [ResponseCache(Duration = 3600, Location = ResponseCacheLocation.Any, VaryByQueryKeys = new[] { "year", "region" })]
     [ProducesResponseType(typeof(IReadOnlyList<PublicHolidayItem>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Holidays(
         [FromQuery] int? year,
+        [FromQuery] string? region,
         CancellationToken cancellationToken)
         => FromResult(await Sender.Send(
-            new GetPublicHolidaysQuery(year ?? DateTime.UtcNow.Year), cancellationToken));
+            new GetPublicHolidaysQuery(year, region), cancellationToken));
 
     /// <summary>Decision body for approve/reject/return.</summary>
     public sealed record DecisionRequest(string? Comments);
@@ -202,7 +283,21 @@ public sealed class LeaveController : ApiControllerBase
     /// <summary>Policy body for <see cref="ConfigurePolicy"/>.</summary>
     public sealed record ConfigurePolicyRequest(
         decimal AnnualEntitlement,
-        Employee360.Domain.Enums.AccrualFrequency AccrualFrequency,
+        AccrualFrequency AccrualFrequency,
         decimal CarryForwardMax,
         int ProbationMonths);
+
+    public sealed record AddHolidayRequest(
+        DateOnly Date,
+        string Name,
+        string? Type = null,
+        bool IsRecurring = false,
+        string? Region = null);
+
+    public sealed record UpdateHolidayRequest(
+        DateOnly Date,
+        string Name,
+        string? Type,
+        bool IsRecurring,
+        string? Region);
 }

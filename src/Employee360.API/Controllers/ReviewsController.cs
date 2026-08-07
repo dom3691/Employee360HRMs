@@ -144,6 +144,19 @@ public sealed class GoalsController : ApiControllerBase
         => FromResult(await Sender.Send(new GetMyGoalsQuery(reviewCycleId), cancellationToken));
 
     [HttpGet]
+    [HasPermission(Permissions.Performance.Manage)]
+    [ProducesResponseType(typeof(PagedResult<EmployeeGoalDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListGoals(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] Guid? employeeId = null,
+        [FromQuery] string? category = null,
+        [FromQuery] string? status = null,
+        CancellationToken cancellationToken = default)
+        => FromResult(await Sender.Send(
+            new GetGoalsPagedQuery(page, pageSize, employeeId, category, status), cancellationToken));
+
+    [HttpGet("by-employee")]
     [HasPermission(Permissions.Performance.ManageTeamReviews)]
     [ProducesResponseType(typeof(IReadOnlyList<EmployeeGoalDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetGoals(

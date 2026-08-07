@@ -15,8 +15,18 @@ namespace Employee360.Application.Features.Company;
 public sealed record CompanyProfileDto(
     Guid Id,
     string Name,
+    string? TradingName,
+    string? LegalName,
     string? RCNumber,
     string? TIN,
+    string? Industry,
+    string? Website,
+    string? Phone,
+    string? Email,
+    string? StreetAddress,
+    string? City,
+    string? State,
+    string? Country,
     string? Address,
     string? LogoUrl,
     string DefaultCurrency);
@@ -59,8 +69,18 @@ public sealed class GetCompanyProfileHandler : IRequestHandler<GetCompanyProfile
         new(
             company.Id,
             company.Name,
+            company.TradingName,
+            company.LegalName,
             company.RCNumber,
             company.TIN,
+            company.Industry,
+            company.Website,
+            company.Phone,
+            company.Email,
+            company.StreetAddress,
+            company.City,
+            company.State,
+            company.Country,
             company.Address,
             company.LogoUrl,
             company.DefaultCurrency);
@@ -73,8 +93,18 @@ public sealed class GetCompanyProfileHandler : IRequestHandler<GetCompanyProfile
 /// <summary>Updates the organization company profile (FR-ADM-001).</summary>
 public sealed record UpdateCompanyProfileCommand(
     string Name,
+    string? TradingName,
+    string? LegalName,
     string? RCNumber,
     string? TIN,
+    string? Industry,
+    string? Website,
+    string? Phone,
+    string? Email,
+    string? StreetAddress,
+    string? City,
+    string? State,
+    string? Country,
     string? Address,
     string? LogoUrl,
     string DefaultCurrency) : IRequest<Result<CompanyProfileDto>>;
@@ -132,8 +162,18 @@ public sealed class UpdateCompanyProfileHandler
         }
 
         company.Name = request.Name.Trim();
+        company.TradingName = request.TradingName?.Trim();
+        company.LegalName = request.LegalName?.Trim();
         company.RCNumber = request.RCNumber?.Trim();
         company.TIN = request.TIN?.Trim();
+        company.Industry = request.Industry?.Trim();
+        company.Website = request.Website?.Trim();
+        company.Phone = request.Phone?.Trim();
+        company.Email = request.Email?.Trim();
+        company.StreetAddress = request.StreetAddress?.Trim();
+        company.City = request.City?.Trim();
+        company.State = request.State?.Trim();
+        company.Country = request.Country?.Trim();
         company.Address = request.Address?.Trim();
         company.LogoUrl = request.LogoUrl?.Trim();
         company.DefaultCurrency = request.DefaultCurrency.Trim().ToUpperInvariant();

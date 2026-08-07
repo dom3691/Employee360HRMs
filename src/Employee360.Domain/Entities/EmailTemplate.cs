@@ -23,4 +23,13 @@ public class EmailTemplate : AuditableEntity
 
     /// <summary>When false, the system falls back to built-in defaults.</summary>
     public bool IsActive { get; set; } = true;
+
+    /// <summary>Template category for admin UI grouping.</summary>
+    public string Category { get; set; } = "System";
+
+    /// <summary>Short description of when this template is sent.</summary>
+    public string Description { get; set; } = string.Empty;
+
+    /// <summary>JSON array of merge token names, e.g. ["{{employeeName}}"].</summary>
+    public string? VariablesJson { get; set; }
 }

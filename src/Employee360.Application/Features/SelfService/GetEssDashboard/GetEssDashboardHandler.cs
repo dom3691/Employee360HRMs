@@ -79,6 +79,7 @@ public sealed class GetEssDashboardHandler
             .Select(r => new LeaveRequestItem(
                 r.Id, r.EmployeeId,
                 r.Employee.FirstName + " " + r.Employee.LastName,
+                r.Employee.Department != null ? r.Employee.Department.Name : null,
                 r.LeaveType.Name, r.StartDate, r.EndDate, r.Days, r.Reason, r.Status,
                 r.Approver != null ? r.Approver.FirstName + " " + r.Approver.LastName : null,
                 r.CreatedAt))

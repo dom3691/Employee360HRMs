@@ -101,7 +101,7 @@ public sealed class AttendanceController : ApiControllerBase
     /// <summary>Lists timesheets for an employee.</summary>
     [HttpGet("timesheets")]
     [HasPermission(Permissions.Attendance.ClockInOut)]
-    [ProducesResponseType(typeof(PagedResult<TimesheetDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<TimesheetListItem>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ListTimesheets(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,

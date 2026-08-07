@@ -28,4 +28,40 @@ public class Company : AuditableEntity
 
     /// <summary>ISO 4217 currency code; default NGN for Nigerian deployments.</summary>
     public string DefaultCurrency { get; set; } = "NGN";
+
+    /// <summary>Trading / brand name shown in UI.</summary>
+    public string? TradingName { get; set; }
+
+    /// <summary>Legal entity name.</summary>
+    public string? LegalName { get; set; }
+
+    /// <summary>Industry sector.</summary>
+    public string? Industry { get; set; }
+
+    /// <summary>Company website URL.</summary>
+    public string? Website { get; set; }
+
+    /// <summary>Primary contact phone.</summary>
+    public string? Phone { get; set; }
+
+    /// <summary>Primary contact email.</summary>
+    public string? Email { get; set; }
+
+    /// <summary>Street address line.</summary>
+    public string? StreetAddress { get; set; }
+
+    /// <summary>City.</summary>
+    public string? City { get; set; }
+
+    /// <summary>State / region.</summary>
+    public string? State { get; set; }
+
+    /// <summary>Country.</summary>
+    public string? Country { get; set; }
+
+    /// <summary>Serialized working calendar settings (JSON).</summary>
+    public string? WorkingCalendarJson { get; set; }
+
+    /// <summary>Serialized SMTP / email sender settings (JSON).</summary>
+    public string? EmailConfigurationJson { get; set; }
 }

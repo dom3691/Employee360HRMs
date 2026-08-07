@@ -10,6 +10,7 @@ public sealed record LeaveRequestItem(
     Guid Id,
     Guid EmployeeId,
     string EmployeeName,
+    string? DepartmentName,
     string LeaveTypeName,
     DateOnly StartDate,
     DateOnly EndDate,
@@ -24,6 +25,16 @@ public sealed record GetMyLeaveRequestsQuery(
     int Page = 1,
     int PageSize = 20,
     int? Year = null)
+    : IRequest<Result<PagedResult<LeaveRequestItem>>>;
+
+/// <summary>Org-wide HR leave requests view (FR-LV HR dashboard).</summary>
+public sealed record GetAllLeaveRequestsQuery(
+    int Page = 1,
+    int PageSize = 20,
+    int? Year = null,
+    string? Search = null,
+    LeaveRequestStatus? Status = null,
+    string? LeaveType = null)
     : IRequest<Result<PagedResult<LeaveRequestItem>>>;
 
 /// <summary>

@@ -1,4 +1,5 @@
 using Employee360.Application.Common.Models;
+using Employee360.Application.Features.Recruitment.Candidates;
 using Employee360.Application.Features.Recruitment.JobPostings;
 using Employee360.Domain.Constants;
 using Employee360.Domain.Enums;
@@ -33,19 +34,27 @@ public sealed class JobsController : ApiControllerBase
     [HasPermission(Permissions.Recruitment.Manage)]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status200OK)]
     public async Task<IActionResult> Create(
-        [FromBody] CreateJobPostingCommand command,
+        [FromBody] UpsertJobPostingRequest body,
         CancellationToken cancellationToken)
-        => FromResult(await Sender.Send(command, cancellationToken));
+        => FromResult(await Sender.Send(
+            new CreateJobPostingCommand(
+                body.Title, body.DepartmentName, body.DepartmentId, body.Description,
+                body.Requirements, body.EmploymentType, body.Location,
+                body.SalaryMin, body.SalaryMax, body.ClosingDate, body.Status),
+            cancellationToken));
 
     [HttpPut("{id:guid}")]
     [HasPermission(Permissions.Recruitment.Manage)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Update(
         [FromRoute] Guid id,
-        [FromBody] UpdateJobPostingRequest body,
+        [FromBody] UpsertJobPostingRequest body,
         CancellationToken cancellationToken)
         => FromResult(await Sender.Send(
-            new UpdateJobPostingCommand(id, body.Title, body.DepartmentId, body.Description, body.ClosingDate),
+            new UpdateJobPostingCommand(
+                id, body.Title, body.DepartmentName, body.DepartmentId, body.Description,
+                body.Requirements, body.EmploymentType, body.Location,
+                body.SalaryMin, body.SalaryMax, body.ClosingDate, body.Status),
             cancellationToken));
 
     [HttpPost("{id:guid}/publish")]
@@ -60,11 +69,24 @@ public sealed class JobsController : ApiControllerBase
     public async Task<IActionResult> Close([FromRoute] Guid id, CancellationToken cancellationToken)
         => FromResult(await Sender.Send(new CloseJobPostingCommand(id), cancellationToken));
 
-    public sealed record UpdateJobPostingRequest(
+    [HttpPost("{id:guid}/reopen")]
+    [HasPermission(Permissions.Recruitment.Manage)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> Reopen([FromRoute] Guid id, CancellationToken cancellationToken)
+        => FromResult(await Sender.Send(new ReopenJobPostingCommand(id), cancellationToken));
+
+    public sealed record UpsertJobPostingRequest(
         string Title,
+        string? DepartmentName,
         Guid? DepartmentId,
         string Description,
-        DateOnly? ClosingDate);
+        string? Requirements,
+        string? EmploymentType,
+        string? Location,
+        decimal? SalaryMin,
+        decimal? SalaryMax,
+        DateOnly? ClosingDate,
+        string? Status);
 }
 
 /// <summary>Public careers page — published jobs (FR-REC-001).</summary>
@@ -76,4 +98,17 @@ public sealed class CareersController : ApiControllerBase
     [ProducesResponseType(typeof(IReadOnlyList<JobPostingDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> PublishedJobs(CancellationToken cancellationToken)
         => FromResult(await Sender.Send(new GetPublishedJobsQuery(), cancellationToken));
+
+    /// <summary>Public job application from the careers page.</summary>
+    [HttpPost("jobs/{jobPostingId:guid}/apply")]
+    [ProducesResponseType(typeof(Guid), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Apply(
+        [FromRoute] Guid jobPostingId,
+        [FromBody] CareersApplyRequest body,
+        CancellationToken cancellationToken)
+        => FromResult(await Sender.Send(
+            new ApplyForJobCommand(jobPostingId, body.Name, body.Email, body.Phone),
+            cancellationToken));
+
+    public sealed record CareersApplyRequest(string Name, string Email, string? Phone);
 }

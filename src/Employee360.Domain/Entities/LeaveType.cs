@@ -23,6 +23,24 @@ public class LeaveType : AuditableEntity, ISoftDelete
     /// <summary>Inactive types cannot be applied for.</summary>
     public bool IsActive { get; set; } = true;
 
+    /// <summary>UI category: Annual, Sick, Maternity, etc.</summary>
+    public string? Category { get; set; }
+
+    /// <summary>Policy description shown in admin UI.</summary>
+    public string? PolicyDescription { get; set; }
+
+    /// <summary>Minimum notice days before leave starts.</summary>
+    public int NoticeDays { get; set; }
+
+    /// <summary>Whether half-day applications are allowed.</summary>
+    public bool AllowHalfDay { get; set; }
+
+    /// <summary>Days threshold above which documentation is required.</summary>
+    public int? DocumentThresholdDays { get; set; }
+
+    /// <summary>Display order in policy lists.</summary>
+    public int SortOrder { get; set; }
+
     /// <summary>Accrual/carry-forward rules (1:1, FR-LV-002).</summary>
     public LeavePolicy? Policy { get; set; }
 

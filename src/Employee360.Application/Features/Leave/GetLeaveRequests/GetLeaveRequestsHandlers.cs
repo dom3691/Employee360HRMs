@@ -50,6 +50,7 @@ public sealed class GetMyLeaveRequestsHandler
                 r.Id,
                 r.EmployeeId,
                 r.Employee.FirstName + " " + r.Employee.LastName,
+                r.Employee.Department != null ? r.Employee.Department.Name : null,
                 r.LeaveType.Name,
                 r.StartDate,
                 r.EndDate,
@@ -109,6 +110,66 @@ public sealed class GetApprovalQueueHandler
                 r.Id,
                 r.EmployeeId,
                 r.Employee.FirstName + " " + r.Employee.LastName,
+                r.Employee.Department != null ? r.Employee.Department.Name : null,
+                r.LeaveType.Name,
+                r.StartDate,
+                r.EndDate,
+                r.Days,
+                r.Reason,
+                r.Status,
+                r.Approver != null ? r.Approver.FirstName + " " + r.Approver.LastName : null,
+                r.CreatedAt));
+
+        return Result.Success(await projected.ToPagedResultAsync(
+            request.Page, request.PageSize, cancellationToken));
+    }
+}
+
+/// <summary>Handles org-wide HR leave requests listing.</summary>
+public sealed class GetAllLeaveRequestsHandler
+    : IRequestHandler<GetAllLeaveRequestsQuery, Result<PagedResult<LeaveRequestItem>>>
+{
+    private readonly IApplicationDbContext _context;
+
+    public GetAllLeaveRequestsHandler(IApplicationDbContext context) => _context = context;
+
+    public async Task<Result<PagedResult<LeaveRequestItem>>> Handle(
+        GetAllLeaveRequestsQuery request,
+        CancellationToken cancellationToken)
+    {
+        var query = _context.LeaveRequests.AsNoTracking();
+
+        if (request.Year.HasValue)
+        {
+            query = query.Where(r => r.StartDate.Year == request.Year.Value);
+        }
+
+        if (request.Status.HasValue)
+        {
+            query = query.Where(r => r.Status == request.Status.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.LeaveType))
+        {
+            var leaveType = request.LeaveType.Trim();
+            query = query.Where(r => r.LeaveType.Name.Contains(leaveType));
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var term = request.Search.Trim();
+            query = query.Where(r =>
+                (r.Employee.FirstName + " " + r.Employee.LastName).Contains(term) ||
+                r.Reason.Contains(term));
+        }
+
+        var projected = query
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new LeaveRequestItem(
+                r.Id,
+                r.EmployeeId,
+                r.Employee.FirstName + " " + r.Employee.LastName,
+                r.Employee.Department != null ? r.Employee.Department.Name : null,
                 r.LeaveType.Name,
                 r.StartDate,
                 r.EndDate,

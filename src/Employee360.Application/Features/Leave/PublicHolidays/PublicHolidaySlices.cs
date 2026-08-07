@@ -6,38 +6,30 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Employee360.Application.Features.Leave.PublicHolidays;
 
-// ---------------------------------------------------------------------------
-// AddPublicHoliday (FR-ADM-002)
-// ---------------------------------------------------------------------------
+public sealed record AddPublicHolidayCommand(
+    DateOnly Date,
+    string Name,
+    string? Type = null,
+    bool IsRecurring = false,
+    string? Region = null) : IRequest<Result<Guid>>;
 
-/// <summary>Adds a public holiday to the calendar.</summary>
-public sealed record AddPublicHolidayCommand(DateOnly Date, string Name) : IRequest<Result<Guid>>;
-
-/// <summary>Input validation for <see cref="AddPublicHolidayCommand"/>.</summary>
 public sealed class AddPublicHolidayValidator : AbstractValidator<AddPublicHolidayCommand>
 {
     public AddPublicHolidayValidator()
     {
-        RuleFor(c => c.Date)
-            .NotEmpty().WithMessage("Holiday date is required.");
-
-        RuleFor(c => c.Name)
-            .NotEmpty().WithMessage("Holiday name is required.")
-            .MaximumLength(128);
+        RuleFor(c => c.Date).NotEmpty().WithMessage("Holiday date is required.");
+        RuleFor(c => c.Name).NotEmpty().MaximumLength(128);
+        RuleFor(c => c.Type).MaximumLength(32);
+        RuleFor(c => c.Region).MaximumLength(128);
     }
 }
 
-/// <summary>Handles <see cref="AddPublicHolidayCommand"/> (unique per date).</summary>
 public sealed class AddPublicHolidayHandler : IRequestHandler<AddPublicHolidayCommand, Result<Guid>>
 {
     private readonly IApplicationDbContext _context;
 
-    public AddPublicHolidayHandler(IApplicationDbContext context)
-    {
-        _context = context;
-    }
+    public AddPublicHolidayHandler(IApplicationDbContext context) => _context = context;
 
-    /// <inheritdoc />
     public async Task<Result<Guid>> Handle(AddPublicHolidayCommand request, CancellationToken cancellationToken)
     {
         if (await _context.PublicHolidays.AnyAsync(h => h.Date == request.Date, cancellationToken))
@@ -50,33 +42,76 @@ public sealed class AddPublicHolidayHandler : IRequestHandler<AddPublicHolidayCo
             Date = request.Date,
             Name = request.Name.Trim(),
             Year = request.Date.Year,
+            HolidayType = request.Type?.Trim(),
+            IsRecurring = request.IsRecurring,
+            Region = request.Region?.Trim(),
         };
 
         _context.PublicHolidays.Add(holiday);
         await _context.SaveChangesAsync(cancellationToken);
-
         return Result.Success(holiday.Id);
     }
 }
 
-// ---------------------------------------------------------------------------
-// RemovePublicHoliday
-// ---------------------------------------------------------------------------
+public sealed record UpdatePublicHolidayCommand(
+    Guid Id,
+    DateOnly Date,
+    string Name,
+    string? Type,
+    bool IsRecurring,
+    string? Region) : IRequest<Result>;
 
-/// <summary>Removes a public holiday by date.</summary>
+public sealed class UpdatePublicHolidayValidator : AbstractValidator<UpdatePublicHolidayCommand>
+{
+    public UpdatePublicHolidayValidator()
+    {
+        RuleFor(c => c.Id).NotEmpty();
+        RuleFor(c => c.Name).NotEmpty().MaximumLength(128);
+    }
+}
+
+public sealed class UpdatePublicHolidayHandler : IRequestHandler<UpdatePublicHolidayCommand, Result>
+{
+    private readonly IApplicationDbContext _context;
+
+    public UpdatePublicHolidayHandler(IApplicationDbContext context) => _context = context;
+
+    public async Task<Result> Handle(UpdatePublicHolidayCommand request, CancellationToken cancellationToken)
+    {
+        var holiday = await _context.PublicHolidays
+            .FirstOrDefaultAsync(h => h.Id == request.Id, cancellationToken);
+
+        if (holiday is null)
+        {
+            return Result.Failure("Public holiday not found.");
+        }
+
+        if (holiday.Date != request.Date &&
+            await _context.PublicHolidays.AnyAsync(h => h.Date == request.Date && h.Id != request.Id, cancellationToken))
+        {
+            return Result.Failure($"A holiday already exists on {request.Date:dd/MM/yyyy}.");
+        }
+
+        holiday.Date = request.Date;
+        holiday.Name = request.Name.Trim();
+        holiday.Year = request.Date.Year;
+        holiday.HolidayType = request.Type?.Trim();
+        holiday.IsRecurring = request.IsRecurring;
+        holiday.Region = request.Region?.Trim();
+
+        await _context.SaveChangesAsync(cancellationToken);
+        return Result.Success();
+    }
+}
+
 public sealed record RemovePublicHolidayCommand(DateOnly Date) : IRequest<Result>;
 
-/// <summary>Handles <see cref="RemovePublicHolidayCommand"/>.</summary>
 public sealed class RemovePublicHolidayHandler : IRequestHandler<RemovePublicHolidayCommand, Result>
 {
     private readonly IApplicationDbContext _context;
 
-    public RemovePublicHolidayHandler(IApplicationDbContext context)
-    {
-        _context = context;
-    }
+    public RemovePublicHolidayHandler(IApplicationDbContext context) => _context = context;
 
-    /// <inheritdoc />
     public async Task<Result> Handle(RemovePublicHolidayCommand request, CancellationToken cancellationToken)
     {
         var holiday = await _context.PublicHolidays
@@ -89,42 +124,74 @@ public sealed class RemovePublicHolidayHandler : IRequestHandler<RemovePublicHol
 
         _context.PublicHolidays.Remove(holiday);
         await _context.SaveChangesAsync(cancellationToken);
-
         return Result.Success();
     }
 }
 
-// ---------------------------------------------------------------------------
-// GetPublicHolidays
-// ---------------------------------------------------------------------------
+public sealed record DeletePublicHolidayByIdCommand(Guid Id) : IRequest<Result>;
 
-/// <summary>A public holiday row.</summary>
-public sealed record PublicHolidayItem(Guid Id, DateOnly Date, string Name);
+public sealed class DeletePublicHolidayByIdHandler : IRequestHandler<DeletePublicHolidayByIdCommand, Result>
+{
+    private readonly IApplicationDbContext _context;
 
-/// <summary>Lists public holidays for a year.</summary>
-public sealed record GetPublicHolidaysQuery(int Year) : IRequest<Result<IReadOnlyList<PublicHolidayItem>>>;
+    public DeletePublicHolidayByIdHandler(IApplicationDbContext context) => _context = context;
 
-/// <summary>Handles <see cref="GetPublicHolidaysQuery"/>.</summary>
+    public async Task<Result> Handle(DeletePublicHolidayByIdCommand request, CancellationToken cancellationToken)
+    {
+        var holiday = await _context.PublicHolidays
+            .FirstOrDefaultAsync(h => h.Id == request.Id, cancellationToken);
+
+        if (holiday is null)
+        {
+            return Result.Failure("Public holiday not found.");
+        }
+
+        _context.PublicHolidays.Remove(holiday);
+        await _context.SaveChangesAsync(cancellationToken);
+        return Result.Success();
+    }
+}
+
+public sealed record PublicHolidayItem(
+    Guid Id,
+    string Name,
+    DateOnly Date,
+    string? Type,
+    bool IsRecurring,
+    string? Region);
+
+public sealed record GetPublicHolidaysQuery(int? Year = null, string? Region = null)
+    : IRequest<Result<IReadOnlyList<PublicHolidayItem>>>;
+
 public sealed class GetPublicHolidaysHandler
     : IRequestHandler<GetPublicHolidaysQuery, Result<IReadOnlyList<PublicHolidayItem>>>
 {
     private readonly IApplicationDbContext _context;
 
-    public GetPublicHolidaysHandler(IApplicationDbContext context)
-    {
-        _context = context;
-    }
+    public GetPublicHolidaysHandler(IApplicationDbContext context) => _context = context;
 
-    /// <inheritdoc />
     public async Task<Result<IReadOnlyList<PublicHolidayItem>>> Handle(
         GetPublicHolidaysQuery request,
         CancellationToken cancellationToken)
     {
-        var holidays = await _context.PublicHolidays
-            .AsNoTracking()
-            .Where(h => h.Year == request.Year)
+        var year = request.Year ?? DateTime.UtcNow.Year;
+        var query = _context.PublicHolidays.AsNoTracking().Where(h => h.Year == year);
+
+        if (!string.IsNullOrWhiteSpace(request.Region))
+        {
+            var region = request.Region.Trim();
+            query = query.Where(h => h.Region == null || h.Region == region);
+        }
+
+        var holidays = await query
             .OrderBy(h => h.Date)
-            .Select(h => new PublicHolidayItem(h.Id, h.Date, h.Name))
+            .Select(h => new PublicHolidayItem(
+                h.Id,
+                h.Name,
+                h.Date,
+                h.HolidayType,
+                h.IsRecurring,
+                h.Region))
             .ToListAsync(cancellationToken);
 
         return Result.Success<IReadOnlyList<PublicHolidayItem>>(holidays);

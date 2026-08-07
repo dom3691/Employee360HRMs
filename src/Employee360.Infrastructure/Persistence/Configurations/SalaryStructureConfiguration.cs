@@ -15,6 +15,8 @@ public sealed class SalaryStructureConfiguration : IEntityTypeConfiguration<Sala
         builder.Property(s => s.Housing).HasPrecision(18, 2);
         builder.Property(s => s.Transport).HasPrecision(18, 2);
         builder.Property(s => s.OtherAllowances).HasPrecision(18, 2);
+        builder.Property(s => s.GradeCodes).HasMaxLength(256);
+        builder.Property(s => s.ComponentsJson);
         builder.HasIndex(s => s.Name).IsUnique().HasDatabaseName("IX_SalaryStructures_Name");
         builder.Ignore(s => s.GrossSalary);
         builder.Ignore(s => s.DomainEvents);

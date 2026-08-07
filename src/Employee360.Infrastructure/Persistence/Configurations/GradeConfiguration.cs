@@ -32,6 +32,23 @@ public sealed class GradeConfiguration : IEntityTypeConfiguration<Grade>
         builder.Property(g => g.MaxSalary)
             .HasPrecision(18, 2);
 
+        builder.Property(g => g.Code)
+            .HasMaxLength(16)
+            .IsRequired()
+            .HasDefaultValue(string.Empty);
+
+        builder.Property(g => g.LevelRank)
+            .HasMaxLength(32)
+            .IsRequired()
+            .HasDefaultValue(string.Empty);
+
+        builder.Property(g => g.Description)
+            .HasMaxLength(512);
+
+        builder.HasIndex(g => g.Code)
+            .IsUnique()
+            .HasDatabaseName("IX_Grades_Code");
+
         builder.Ignore(g => g.DomainEvents);
     }
 }

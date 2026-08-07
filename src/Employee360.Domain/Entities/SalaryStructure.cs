@@ -25,6 +25,12 @@ public class SalaryStructure : AuditableEntity, ISoftDelete
     /// <summary>When false, hidden from new assignments.</summary>
     public bool IsActive { get; set; } = true;
 
+    /// <summary>Comma-separated grade codes this structure applies to.</summary>
+    public string? GradeCodes { get; set; }
+
+    /// <summary>JSON array of salary components (PercentOfGross definitions).</summary>
+    public string? ComponentsJson { get; set; }
+
     /// <summary>Monthly gross derived from components.</summary>
     public decimal GrossSalary => Basic + Housing + Transport + OtherAllowances;
 

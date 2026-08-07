@@ -31,7 +31,6 @@ public sealed class CandidatesController : ApiControllerBase
     public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken cancellationToken)
         => FromResult(await Sender.Send(new GetCandidateByIdQuery(id), cancellationToken));
 
-    /// <summary>Public job application endpoint.</summary>
     [HttpPost("apply")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status200OK)]
@@ -40,12 +39,21 @@ public sealed class CandidatesController : ApiControllerBase
         CancellationToken cancellationToken)
         => FromResult(await Sender.Send(command, cancellationToken));
 
+    [HttpPut("{id:guid}/stage")]
+    [HasPermission(Permissions.Recruitment.Manage)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> UpdateStage(
+        [FromRoute] Guid id,
+        [FromBody] UpdateStageRequest body,
+        CancellationToken cancellationToken)
+        => FromResult(await Sender.Send(new TransitionCandidateStageCommand(id, body.Stage), cancellationToken));
+
     [HttpPost("{id:guid}/stage")]
     [HasPermission(Permissions.Recruitment.Manage)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> TransitionStage(
         [FromRoute] Guid id,
-        [FromBody] TransitionStageRequest body,
+        [FromBody] UpdateStageRequest body,
         CancellationToken cancellationToken)
         => FromResult(await Sender.Send(new TransitionCandidateStageCommand(id, body.Stage), cancellationToken));
 
@@ -89,7 +97,7 @@ public sealed class CandidatesController : ApiControllerBase
             new ConvertCandidateToEmployeeCommand(id, body.PositionId, body.ManagerId, body.JoinDate),
             cancellationToken));
 
-    public sealed record TransitionStageRequest(CandidateStage Stage);
+    public sealed record UpdateStageRequest(CandidateStage Stage);
 
     public sealed record ConvertToEmployeeRequest(
         Guid? PositionId,

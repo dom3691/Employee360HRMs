@@ -3,6 +3,7 @@ using System;
 using Employee360.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Employee360.Infrastructure.Migrations
 {
     [DbContext(typeof(Employee360DbContext))]
-    partial class Employee360DbContextModelSnapshot : ModelSnapshot
+    [Migration("20260807220815_FrontendContractExtensions")]
+    partial class FrontendContractExtensions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -146,10 +149,6 @@ namespace Employee360.Infrastructure.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("text");
 
-                    b.Property<string>("CurrentTitle")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -176,19 +175,12 @@ namespace Employee360.Infrastructure.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
 
-                    b.Property<decimal?>("Rating")
-                        .HasPrecision(3, 1)
-                        .HasColumnType("numeric(3,1)");
-
                     b.Property<string>("ResumePath")
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)");
 
                     b.Property<int>("Stage")
                         .HasColumnType("integer");
-
-                    b.Property<string>("TagsJson")
-                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -838,13 +830,6 @@ namespace Employee360.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)")
-                        .HasDefaultValue("");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -854,22 +839,11 @@ namespace Employee360.Infrastructure.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Description")
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
                     b.Property<int>("Level")
                         .HasColumnType("integer");
-
-                    b.Property<string>("LevelRank")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasDefaultValue("");
 
                     b.Property<decimal>("MaxSalary")
                         .HasPrecision(18, 2)
@@ -891,10 +865,6 @@ namespace Employee360.Infrastructure.Migrations
                         .HasColumnType("character varying(64)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("Code")
-                        .IsUnique()
-                        .HasDatabaseName("IX_Grades_Code");
 
                     b.HasIndex("Level")
                         .IsUnique()
@@ -2154,9 +2124,6 @@ namespace Employee360.Infrastructure.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
-                    b.Property<string>("ComponentsJson")
-                        .HasColumnType("text");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -2165,10 +2132,6 @@ namespace Employee360.Infrastructure.Migrations
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("GradeCodes")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
 
                     b.Property<decimal>("Housing")
                         .HasPrecision(18, 2)

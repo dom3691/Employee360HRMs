@@ -32,6 +32,16 @@ public sealed class EmailTemplateConfiguration : IEntityTypeConfiguration<EmailT
         builder.Property(t => t.BodyHtml)
             .IsRequired();
 
+        builder.Property(t => t.Category)
+            .HasMaxLength(32)
+            .HasDefaultValue("System");
+
+        builder.Property(t => t.Description)
+            .HasMaxLength(512)
+            .HasDefaultValue(string.Empty);
+
+        builder.Property(t => t.VariablesJson);
+
         builder.Ignore(t => t.DomainEvents);
     }
 }

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Employee360.Application.Common.Interfaces;
 using Employee360.Application.Common.Models;
 using Employee360.Application.Common.Validation;
@@ -9,18 +10,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Employee360.Application.Features.EmailTemplates;
 
-// ---------------------------------------------------------------------------
-// DTOs
-// ---------------------------------------------------------------------------
-
-/// <summary>Email template list/detail item (FR-ADM-003).</summary>
 public sealed record EmailTemplateDto(
     Guid Id,
     string Code,
     string Name,
+    string Category,
+    string Description,
     string Subject,
     string BodyHtml,
-    bool IsActive);
+    bool IsActive,
+    DateTime? LastModified,
+    string? LastModifiedBy,
+    IReadOnlyList<string>? Variables);
 
 // ---------------------------------------------------------------------------
 // GetEmailTemplatesPaged
@@ -71,7 +72,28 @@ public sealed class GetEmailTemplatesPagedHandler
     }
 
     internal static EmailTemplateDto Map(EmailTemplate template) =>
-        new(template.Id, template.Code, template.Name, template.Subject, template.BodyHtml, template.IsActive);
+        new(
+            template.Id,
+            template.Code,
+            template.Name,
+            template.Category,
+            template.Description,
+            template.Subject,
+            template.BodyHtml,
+            template.IsActive,
+            template.ModifiedAt ?? template.CreatedAt,
+            null,
+            DeserializeVariables(template.VariablesJson));
+
+    private static IReadOnlyList<string>? DeserializeVariables(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return null;
+        }
+
+        return JsonSerializer.Deserialize<List<string>>(json);
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -180,9 +202,11 @@ public sealed class CreateEmailTemplateHandler : IRequestHandler<CreateEmailTemp
 public sealed record UpdateEmailTemplateCommand(
     Guid Id,
     string Name,
+    string Category,
+    string Description,
     string Subject,
     string BodyHtml,
-    bool IsActive) : IRequest<Result>;
+    bool IsActive) : IRequest<Result<EmailTemplateDto>>;
 
 /// <summary>Input validation for <see cref="UpdateEmailTemplateCommand"/>.</summary>
 public sealed class UpdateEmailTemplateValidator : AbstractValidator<UpdateEmailTemplateCommand>
@@ -197,7 +221,7 @@ public sealed class UpdateEmailTemplateValidator : AbstractValidator<UpdateEmail
 }
 
 /// <summary>Handles <see cref="UpdateEmailTemplateCommand"/>.</summary>
-public sealed class UpdateEmailTemplateHandler : IRequestHandler<UpdateEmailTemplateCommand, Result>
+public sealed class UpdateEmailTemplateHandler : IRequestHandler<UpdateEmailTemplateCommand, Result<EmailTemplateDto>>
 {
     private readonly IApplicationDbContext _context;
 
@@ -207,24 +231,28 @@ public sealed class UpdateEmailTemplateHandler : IRequestHandler<UpdateEmailTemp
     }
 
     /// <inheritdoc />
-    public async Task<Result> Handle(UpdateEmailTemplateCommand request, CancellationToken cancellationToken)
+    public async Task<Result<EmailTemplateDto>> Handle(
+        UpdateEmailTemplateCommand request,
+        CancellationToken cancellationToken)
     {
         var template = await _context.EmailTemplates
             .FirstOrDefaultAsync(t => t.Id == request.Id, cancellationToken);
 
         if (template is null)
         {
-            return Result.Failure("Email template not found.");
+            return Result.Failure<EmailTemplateDto>("Email template not found.");
         }
 
         template.Name = request.Name.Trim();
+        template.Category = request.Category.Trim();
+        template.Description = request.Description.Trim();
         template.Subject = request.Subject.Trim();
         template.BodyHtml = request.BodyHtml;
         template.IsActive = request.IsActive;
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        return Result.Success();
+        return Result.Success(GetEmailTemplatesPagedHandler.Map(template));
     }
 }
 

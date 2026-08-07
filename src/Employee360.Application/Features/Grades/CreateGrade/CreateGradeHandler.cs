@@ -1,4 +1,5 @@
 using Employee360.Application.Common.Interfaces;
+using Employee360.Application.Features.Grades.GetGrades;
 using Employee360.Domain.Common;
 using Employee360.Domain.Entities;
 using MediatR;
@@ -11,32 +12,43 @@ public sealed class CreateGradeHandler : IRequestHandler<CreateGradeCommand, Res
 {
     private readonly IApplicationDbContext _context;
 
-    public CreateGradeHandler(IApplicationDbContext context)
-    {
-        _context = context;
-    }
+    public CreateGradeHandler(IApplicationDbContext context) => _context = context;
 
-    /// <inheritdoc />
     public async Task<Result<Guid>> Handle(CreateGradeCommand request, CancellationToken cancellationToken)
     {
-        var name = request.Name.Trim();
+        var title = request.Title.Trim();
+        var code = request.Code.Trim().ToUpperInvariant();
+        var level = GradeMapping.ParseLevelRank(request.LevelRank);
 
-        if (await _context.Grades.AnyAsync(g => g.Name.ToLower() == name.ToLower(), cancellationToken))
+        if (level <= 0)
         {
-            return Result.Failure<Guid>($"A grade named '{name}' already exists.");
+            return Result.Failure<Guid>("Level rank must include a numeric level.");
         }
 
-        if (await _context.Grades.AnyAsync(g => g.Level == request.Level, cancellationToken))
+        if (await _context.Grades.AnyAsync(g => !g.IsDeleted && g.Name.ToLower() == title.ToLower(), cancellationToken))
         {
-            return Result.Failure<Guid>($"A grade with level {request.Level} already exists.");
+            return Result.Failure<Guid>($"A grade named '{title}' already exists.");
+        }
+
+        if (await _context.Grades.AnyAsync(g => !g.IsDeleted && g.Code.ToLower() == code.ToLower(), cancellationToken))
+        {
+            return Result.Failure<Guid>($"A grade with code '{code}' already exists.");
+        }
+
+        if (await _context.Grades.AnyAsync(g => !g.IsDeleted && g.Level == level, cancellationToken))
+        {
+            return Result.Failure<Guid>($"A grade with level {level} already exists.");
         }
 
         var grade = new Grade
         {
-            Name = name,
-            Level = request.Level,
-            MinSalary = request.MinSalary,
-            MaxSalary = request.MaxSalary,
+            Name = title,
+            Code = code,
+            LevelRank = request.LevelRank.Trim(),
+            Description = request.Description?.Trim(),
+            Level = level,
+            MinSalary = request.SalaryMin,
+            MaxSalary = request.SalaryMax,
         };
 
         _context.Grades.Add(grade);

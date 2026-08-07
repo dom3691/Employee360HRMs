@@ -43,14 +43,15 @@ public sealed class EmailTemplatesController : ApiControllerBase
     /// <summary>Updates an email template.</summary>
     [HttpPut("{id:guid}")]
     [HasPermission(Permissions.Administration.SystemConfiguration)]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(EmailTemplateDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Update(
         [FromRoute] Guid id,
         [FromBody] UpdateEmailTemplateRequest body,
         CancellationToken cancellationToken)
         => FromResult(await Sender.Send(
-            new UpdateEmailTemplateCommand(id, body.Name, body.Subject, body.BodyHtml, body.IsActive),
+            new UpdateEmailTemplateCommand(
+                id, body.Name, body.Category, body.Description, body.Subject, body.BodyHtml, body.IsActive),
             cancellationToken));
 
     /// <summary>Deletes an email template.</summary>
@@ -76,6 +77,8 @@ public sealed class EmailTemplatesController : ApiControllerBase
     /// <summary>Request body for template update (id from route).</summary>
     public sealed record UpdateEmailTemplateRequest(
         string Name,
+        string Category,
+        string Description,
         string Subject,
         string BodyHtml,
         bool IsActive);

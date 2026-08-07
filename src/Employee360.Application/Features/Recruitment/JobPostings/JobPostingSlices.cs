@@ -1,5 +1,6 @@
 using Employee360.Application.Common.Interfaces;
 using Employee360.Application.Common.Models;
+using Employee360.Application.Common.Mapping;
 using Employee360.Application.Common.Validation;
 using Employee360.Domain.Common;
 using Employee360.Domain.Entities;
@@ -17,9 +18,17 @@ public sealed record JobPostingDto(
     Guid? DepartmentId,
     string? DepartmentName,
     string Description,
-    JobPostingStatus Status,
+    string? Requirements,
+    string Status,
     DateOnly? ClosingDate,
-    int CandidateCount);
+    int CandidateCount,
+    string? EmploymentType,
+    string? Location,
+    decimal? SalaryMin,
+    decimal? SalaryMax,
+    DateOnly? PostedDate,
+    string? HiringManagerName,
+    int ViewCount);
 
 // ---------------------------------------------------------------------------
 // CRUD
@@ -27,9 +36,16 @@ public sealed record JobPostingDto(
 
 public sealed record CreateJobPostingCommand(
     string Title,
+    string? DepartmentName,
     Guid? DepartmentId,
     string Description,
-    DateOnly? ClosingDate) : IRequest<Result<Guid>>;
+    string? Requirements,
+    string? EmploymentType,
+    string? Location,
+    decimal? SalaryMin,
+    decimal? SalaryMax,
+    DateOnly? ClosingDate,
+    string? Status) : IRequest<Result<Guid>>;
 
 public sealed class CreateJobPostingValidator : AbstractValidator<CreateJobPostingCommand>
 {
@@ -59,8 +75,13 @@ public sealed class CreateJobPostingHandler : IRequestHandler<CreateJobPostingCo
             Title = request.Title.Trim(),
             DepartmentId = request.DepartmentId,
             Description = request.Description.Trim(),
+            Requirements = request.Requirements?.Trim(),
+            EmploymentType = request.EmploymentType?.Trim(),
+            Location = request.Location?.Trim(),
+            SalaryMin = request.SalaryMin,
+            SalaryMax = request.SalaryMax,
             ClosingDate = request.ClosingDate,
-            Status = JobPostingStatus.Draft,
+            Status = JobPostingMapping.ParseStatus(request.Status),
         };
 
         _context.JobPostings.Add(posting);
@@ -72,9 +93,16 @@ public sealed class CreateJobPostingHandler : IRequestHandler<CreateJobPostingCo
 public sealed record UpdateJobPostingCommand(
     Guid Id,
     string Title,
+    string? DepartmentName,
     Guid? DepartmentId,
     string Description,
-    DateOnly? ClosingDate) : IRequest<Result>;
+    string? Requirements,
+    string? EmploymentType,
+    string? Location,
+    decimal? SalaryMin,
+    decimal? SalaryMax,
+    DateOnly? ClosingDate,
+    string? Status) : IRequest<Result>;
 
 public sealed class UpdateJobPostingHandler : IRequestHandler<UpdateJobPostingCommand, Result>
 {
@@ -104,7 +132,16 @@ public sealed class UpdateJobPostingHandler : IRequestHandler<UpdateJobPostingCo
         posting.Title = request.Title.Trim();
         posting.DepartmentId = request.DepartmentId;
         posting.Description = request.Description.Trim();
+        posting.Requirements = request.Requirements?.Trim();
+        posting.EmploymentType = request.EmploymentType?.Trim();
+        posting.Location = request.Location?.Trim();
+        posting.SalaryMin = request.SalaryMin;
+        posting.SalaryMax = request.SalaryMax;
         posting.ClosingDate = request.ClosingDate;
+        if (!string.IsNullOrWhiteSpace(request.Status))
+        {
+            posting.Status = JobPostingMapping.ParseStatus(request.Status);
+        }
         await _context.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }
@@ -142,6 +179,7 @@ public sealed class PublishJobPostingHandler : IRequestHandler<PublishJobPosting
         }
 
         posting.Status = JobPostingStatus.Published;
+        posting.PostedDate = _clock.TodayWat;
         await _context.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }
@@ -164,6 +202,33 @@ public sealed class CloseJobPostingHandler : IRequestHandler<CloseJobPostingComm
         }
 
         posting.Status = JobPostingStatus.Closed;
+        await _context.SaveChangesAsync(cancellationToken);
+        return Result.Success();
+    }
+}
+
+public sealed record ReopenJobPostingCommand(Guid Id) : IRequest<Result>;
+
+public sealed class ReopenJobPostingHandler : IRequestHandler<ReopenJobPostingCommand, Result>
+{
+    private readonly IApplicationDbContext _context;
+
+    public ReopenJobPostingHandler(IApplicationDbContext context) => _context = context;
+
+    public async Task<Result> Handle(ReopenJobPostingCommand request, CancellationToken cancellationToken)
+    {
+        var posting = await _context.JobPostings.FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
+        if (posting is null)
+        {
+            return Result.Failure("Job posting not found.");
+        }
+
+        if (posting.Status != JobPostingStatus.Closed)
+        {
+            return Result.Failure("Only closed job postings can be reopened.");
+        }
+
+        posting.Status = JobPostingStatus.Published;
         await _context.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }
@@ -209,24 +274,48 @@ public sealed class GetJobPostingsHandler : IRequestHandler<GetJobPostingsQuery,
 
         var total = await query.CountAsync(cancellationToken);
 
-        var items = await query
+        var postings = await query
+            .Include(p => p.Department)
+            .Include(p => p.Candidates)
             .OrderByDescending(p => p.CreatedAt)
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(p => new JobPostingDto(
-                p.Id,
-                p.Title,
-                p.DepartmentId,
-                p.Department != null ? p.Department.Name : null,
-                p.Description,
-                p.Status,
-                p.ClosingDate,
-                p.Candidates.Count))
             .ToListAsync(cancellationToken);
+
+        var items = postings.Select(JobPostingMapping.MapPosting).ToList();
 
         return Result.Success(new PagedResult<JobPostingDto>(
             items, request.Page, request.PageSize, total));
     }
+}
+
+internal static class JobPostingMapping
+{
+    internal static JobPostingDto MapPosting(JobPosting p) =>
+        new(
+            p.Id,
+            p.Title,
+            p.DepartmentId,
+            p.Department?.Name,
+            p.Description,
+            p.Requirements,
+            PerformanceApiMapping.ToApiJobStatus(p.Status),
+            p.ClosingDate,
+            p.Candidates?.Count ?? 0,
+            p.EmploymentType,
+            p.Location,
+            p.SalaryMin,
+            p.SalaryMax,
+            p.PostedDate,
+            p.HiringManagerName,
+            p.ViewCount);
+
+    internal static JobPostingStatus ParseStatus(string? status) => status?.Trim() switch
+    {
+        "Published" => JobPostingStatus.Published,
+        "Closed" => JobPostingStatus.Closed,
+        _ => JobPostingStatus.Draft,
+    };
 }
 
 public sealed record GetJobPostingByIdQuery(Guid Id) : IRequest<Result<JobPostingDto>>;
@@ -241,23 +330,15 @@ public sealed class GetJobPostingByIdHandler : IRequestHandler<GetJobPostingById
         GetJobPostingByIdQuery request,
         CancellationToken cancellationToken)
     {
-        var item = await _context.JobPostings
+        var posting = await _context.JobPostings
             .AsNoTracking()
-            .Where(p => p.Id == request.Id)
-            .Select(p => new JobPostingDto(
-                p.Id,
-                p.Title,
-                p.DepartmentId,
-                p.Department != null ? p.Department.Name : null,
-                p.Description,
-                p.Status,
-                p.ClosingDate,
-                p.Candidates.Count))
-            .FirstOrDefaultAsync(cancellationToken);
+            .Include(p => p.Department)
+            .Include(p => p.Candidates)
+            .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
 
-        return item is null
+        return posting is null
             ? Result.Failure<JobPostingDto>("Job posting not found.")
-            : Result.Success(item);
+            : Result.Success(JobPostingMapping.MapPosting(posting));
     }
 }
 
@@ -281,22 +362,17 @@ public sealed class GetPublishedJobsHandler : IRequestHandler<GetPublishedJobsQu
     {
         var today = _clock.TodayWat;
 
-        var items = await _context.JobPostings
+        var postings = await _context.JobPostings
             .AsNoTracking()
+            .Include(p => p.Department)
+            .Include(p => p.Candidates)
             .Where(p =>
                 p.Status == JobPostingStatus.Published &&
                 (p.ClosingDate == null || p.ClosingDate >= today))
             .OrderByDescending(p => p.CreatedAt)
-            .Select(p => new JobPostingDto(
-                p.Id,
-                p.Title,
-                p.DepartmentId,
-                p.Department != null ? p.Department.Name : null,
-                p.Description,
-                p.Status,
-                p.ClosingDate,
-                p.Candidates.Count))
             .ToListAsync(cancellationToken);
+
+        var items = postings.Select(JobPostingMapping.MapPosting).ToList();
 
         return Result.Success<IReadOnlyList<JobPostingDto>>(items);
     }

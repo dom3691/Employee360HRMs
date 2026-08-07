@@ -9,21 +9,55 @@ namespace Employee360.API.Controllers;
 [Route("api/v1/company")]
 public sealed class CompanyController : ApiControllerBase
 {
-    /// <summary>Gets the organization company profile.</summary>
     [HttpGet]
     [HasPermission(Permissions.Administration.SystemConfiguration)]
     [ProducesResponseType(typeof(CompanyProfileDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetProfile(CancellationToken cancellationToken)
         => FromResult(await Sender.Send(new GetCompanyProfileQuery(), cancellationToken));
 
-    /// <summary>Updates the organization company profile.</summary>
     [HttpPut]
     [HasPermission(Permissions.Administration.SystemConfiguration)]
     [ProducesResponseType(typeof(CompanyProfileDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateProfile(
         [FromBody] UpdateCompanyProfileCommand command,
         CancellationToken cancellationToken)
         => FromResult(await Sender.Send(command, cancellationToken));
+
+    [HttpGet("working-calendar")]
+    [HasPermission(Permissions.Administration.SystemConfiguration)]
+    [ProducesResponseType(typeof(WorkingCalendarDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetWorkingCalendar(CancellationToken cancellationToken)
+        => FromResult(await Sender.Send(new GetWorkingCalendarQuery(), cancellationToken));
+
+    [HttpPut("working-calendar")]
+    [HasPermission(Permissions.Administration.SystemConfiguration)]
+    [ProducesResponseType(typeof(WorkingCalendarDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> UpdateWorkingCalendar(
+        [FromBody] UpdateWorkingCalendarCommand command,
+        CancellationToken cancellationToken)
+        => FromResult(await Sender.Send(command, cancellationToken));
+
+    [HttpGet("email-configuration")]
+    [HasPermission(Permissions.Administration.SystemConfiguration)]
+    [ProducesResponseType(typeof(EmailConfigurationDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetEmailConfiguration(CancellationToken cancellationToken)
+        => FromResult(await Sender.Send(new GetEmailConfigurationQuery(), cancellationToken));
+
+    [HttpPut("email-configuration")]
+    [HasPermission(Permissions.Administration.SystemConfiguration)]
+    [ProducesResponseType(typeof(EmailConfigurationDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> UpdateEmailConfiguration(
+        [FromBody] UpdateEmailConfigurationCommand command,
+        CancellationToken cancellationToken)
+        => FromResult(await Sender.Send(command, cancellationToken));
+
+    [HttpPost("email-configuration/test")]
+    [HasPermission(Permissions.Administration.SystemConfiguration)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> TestEmailConfiguration(
+        [FromBody] TestEmailRequest? body,
+        CancellationToken cancellationToken)
+        => FromResult(await Sender.Send(new TestEmailConfigurationCommand(body?.ToEmail), cancellationToken));
+
+    public sealed record TestEmailRequest(string? ToEmail);
 }

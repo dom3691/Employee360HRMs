@@ -17,7 +17,8 @@ public enum CandidateStage
     Applied = 0,
     Screening = 1,
     Interview = 2,
-    Offer = 3,
-    Hired = 4,
-    Rejected = 5,
+    Assessment = 3,
+    Offer = 4,
+    Hired = 5,
+    Rejected = 6,
 }

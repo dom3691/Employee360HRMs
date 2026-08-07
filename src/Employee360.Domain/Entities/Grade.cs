@@ -20,6 +20,15 @@ public class Grade : AuditableEntity, ISoftDelete
     /// <summary>Maximum annual gross salary for the band (₦).</summary>
     public decimal MaxSalary { get; set; }
 
+    /// <summary>Short unique code, e.g. "G5".</summary>
+    public string Code { get; set; } = string.Empty;
+
+    /// <summary>Display rank label, e.g. "Level 5".</summary>
+    public string LevelRank { get; set; } = string.Empty;
+
+    /// <summary>Optional description of the grade band.</summary>
+    public string? Description { get; set; }
+
     /// <summary>Positions assigned to this grade.</summary>
     public ICollection<Position> Positions { get; set; } = new List<Position>();
 

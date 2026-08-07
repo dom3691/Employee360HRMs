@@ -1,4 +1,5 @@
 using Employee360.Application.Common.Interfaces;
+using Employee360.Application.Common.Mapping;
 using Employee360.Domain.Common;
 using Employee360.Domain.Entities;
 using Employee360.Domain.Enums;
@@ -11,10 +12,16 @@ namespace Employee360.Application.Features.Performance.ReviewCycles;
 public sealed record ReviewCycleDto(
     Guid Id,
     string Name,
-    ReviewCycleType Type,
+    string Type,
     DateOnly StartDate,
     DateOnly EndDate,
-    ReviewCycleStatus Status,
+    string Status,
+    string? PeriodLabel,
+    DateOnly? SelfAssessmentDue,
+    DateOnly? ManagerReviewDue,
+    int? ReviewCount,
+    int? CompletedCount,
+    decimal? CompletionPercent,
     decimal GoalWeightPercent,
     decimal SelfWeightPercent,
     decimal ManagerWeightPercent,
@@ -232,19 +239,65 @@ public sealed class GetReviewCyclesHandler : IRequestHandler<GetReviewCyclesQuer
             query = query.Where(c => c.Status == request.Status.Value);
         }
 
-        var items = await query
+        var cycles = await query
             .OrderByDescending(c => c.StartDate)
-            .Select(c => new ReviewCycleDto(
-                c.Id, c.Name, c.Type, c.StartDate, c.EndDate, c.Status,
-                c.GoalWeightPercent, c.SelfWeightPercent, c.ManagerWeightPercent, c.PeerWeightPercent))
             .ToListAsync(cancellationToken);
+
+        if (cycles.Count == 0)
+        {
+            return Result.Success<IReadOnlyList<ReviewCycleDto>>(Array.Empty<ReviewCycleDto>());
+        }
+
+        var cycleIds = cycles.Select(c => c.Id).ToList();
+        var stats = await _context.PerformanceReviews
+            .AsNoTracking()
+            .Where(r => cycleIds.Contains(r.ReviewCycleId))
+            .GroupBy(r => r.ReviewCycleId)
+            .Select(g => new
+            {
+                CycleId = g.Key,
+                Total = g.Count(),
+                Completed = g.Count(r => r.Status == PerformanceReviewStatus.Finalized),
+            })
+            .ToListAsync(cancellationToken);
+
+        var statsLookup = stats.ToDictionary(s => s.CycleId);
+
+        var items = cycles
+            .Select(c =>
+            {
+                statsLookup.TryGetValue(c.Id, out var stat);
+                return MapCycle(c, stat?.Total, stat?.Completed);
+            })
+            .ToList();
 
         return Result.Success<IReadOnlyList<ReviewCycleDto>>(items);
     }
 
-    internal static ReviewCycleDto MapCycle(ReviewCycle c) =>
-        new(c.Id, c.Name, c.Type, c.StartDate, c.EndDate, c.Status,
-            c.GoalWeightPercent, c.SelfWeightPercent, c.ManagerWeightPercent, c.PeerWeightPercent);
+    internal static ReviewCycleDto MapCycle(ReviewCycle c, int? reviewCount = null, int? completedCount = null)
+    {
+        decimal? completionPercent = reviewCount > 0
+            ? Math.Round(completedCount!.Value * 100m / reviewCount!.Value, 1)
+            : null;
+
+        return new ReviewCycleDto(
+            c.Id,
+            c.Name,
+            PerformanceApiMapping.ToApiCycleType(c.Type),
+            c.StartDate,
+            c.EndDate,
+            PerformanceApiMapping.ToApiCycleStatus(c.Status),
+            $"{c.StartDate:MMM yyyy} – {c.EndDate:MMM yyyy}",
+            c.EndDate.AddDays(-14),
+            c.EndDate.AddDays(-7),
+            reviewCount,
+            completedCount,
+            completionPercent,
+            c.GoalWeightPercent,
+            c.SelfWeightPercent,
+            c.ManagerWeightPercent,
+            c.PeerWeightPercent);
+    }
 }
 
 public sealed record GetReviewCycleByIdQuery(Guid Id) : IRequest<Result<ReviewCycleDto>>;

@@ -1,5 +1,6 @@
 using Employee360.Application.Common.Interfaces;
 using Employee360.Application.Common.Models;
+using Employee360.Application.Common.Mapping;
 using Employee360.Application.Common.Validation;
 using Employee360.Application.Features.Performance;
 using Employee360.Domain.Common;
@@ -18,14 +19,26 @@ public sealed record PerformanceReviewDto(
     string CycleName,
     Guid EmployeeId,
     string EmployeeName,
+    string? EmployeeTitle,
+    string? DepartmentName,
     Guid? ManagerEmployeeId,
+    string? ManagerName,
     decimal? SelfRating,
     string? SelfComments,
     decimal? ManagerRating,
     string? ManagerComments,
     decimal? FinalRating,
-    PerformanceReviewStatus Status,
-    DateTime? FinalizedAtUtc);
+    string Status,
+    DateTime? FinalizedAtUtc,
+    DateOnly? CompletedDate,
+    string? SelfAssessmentSummary,
+    string? GoalsAchieved,
+    string? StrengthsDemonstrated,
+    string? DevelopmentAreas,
+    string? ManagerSummary,
+    string? ManagerStrengths,
+    string? ManagerDevelopment,
+    string? NextPeriodGoals);
 
 public sealed record PerformanceHistoryItemDto(
     Guid ReviewCycleId,
@@ -296,25 +309,59 @@ public sealed class GetPerformanceReviewsHandler
 
         var total = await query.CountAsync(cancellationToken);
 
-        var items = await query
+        var reviews = await query
             .OrderByDescending(r => r.ReviewCycle!.StartDate)
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(r => new PerformanceReviewDto(
+            .Select(r => new
+            {
                 r.Id,
                 r.ReviewCycleId,
-                r.ReviewCycle!.Name,
+                CycleName = r.ReviewCycle!.Name,
                 r.EmployeeId,
-                r.Employee!.FirstName + " " + r.Employee.LastName,
+                EmployeeName = r.Employee!.FirstName + " " + r.Employee.LastName,
+                EmployeeTitle = r.Employee.Position != null ? r.Employee.Position.Title : null,
+                DepartmentName = r.Employee.Department != null ? r.Employee.Department.Name : null,
                 r.ManagerEmployeeId,
+                ManagerName = r.ManagerEmployee != null
+                    ? r.ManagerEmployee.FirstName + " " + r.ManagerEmployee.LastName
+                    : null,
                 r.SelfRating,
                 r.SelfComments,
                 r.ManagerRating,
                 r.ManagerComments,
                 r.FinalRating,
                 r.Status,
-                r.FinalizedAtUtc))
+                r.FinalizedAtUtc,
+            })
             .ToListAsync(cancellationToken);
+
+        var items = reviews.Select(r => new PerformanceReviewDto(
+            r.Id,
+            r.ReviewCycleId,
+            r.CycleName,
+            r.EmployeeId,
+            r.EmployeeName,
+            r.EmployeeTitle,
+            r.DepartmentName,
+            r.ManagerEmployeeId,
+            r.ManagerName,
+            r.SelfRating,
+            r.SelfComments,
+            r.ManagerRating,
+            r.ManagerComments,
+            r.FinalRating,
+            PerformanceApiMapping.ToApiStatus(r.Status),
+            r.FinalizedAtUtc,
+            r.FinalizedAtUtc.HasValue ? DateOnly.FromDateTime(r.FinalizedAtUtc.Value) : null,
+            r.SelfComments,
+            null,
+            null,
+            null,
+            r.ManagerComments,
+            null,
+            null,
+            null)).ToList();
 
         return Result.Success(new PagedResult<PerformanceReviewDto>(
             items, request.Page, request.PageSize, total));

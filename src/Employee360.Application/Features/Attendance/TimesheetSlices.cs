@@ -1,4 +1,5 @@
 using Employee360.Application.Common.Interfaces;
+using Employee360.Application.Common.Mapping;
 using Employee360.Application.Common.Models;
 using Employee360.Application.Common.Validation;
 using Employee360.Domain.Common;
@@ -25,6 +26,18 @@ public sealed record TimesheetDto(
     TimesheetStatus Status,
     string? Notes,
     string? ReviewComments);
+
+/// <summary>Timesheet list item aligned with frontend contract.</summary>
+public sealed record TimesheetListItem(
+    Guid Id,
+    Guid EmployeeId,
+    string? EmployeeName,
+    DateOnly PeriodStart,
+    DateOnly PeriodEnd,
+    decimal TotalHours,
+    decimal RegularHours,
+    decimal OvertimeHours,
+    string Status);
 
 // ---------------------------------------------------------------------------
 // UpsertTimesheet
@@ -244,11 +257,11 @@ public sealed class ReviewTimesheetHandler : IRequestHandler<ReviewTimesheetComm
 // GetTimesheets
 // ---------------------------------------------------------------------------
 
-/// <summary>Lists timesheets for the current employee or team.</summary>
+/// <summary>Lists timesheets for the current employee, team, or org-wide (HR).</summary>
 public sealed record GetTimesheetsQuery(
     int Page = 1,
     int PageSize = 20,
-    Guid? EmployeeId = null) : IRequest<Result<PagedResult<TimesheetDto>>>;
+    Guid? EmployeeId = null) : IRequest<Result<PagedResult<TimesheetListItem>>>;
 
 public sealed class GetTimesheetsValidator : AbstractValidator<GetTimesheetsQuery>
 {
@@ -260,7 +273,7 @@ public sealed class GetTimesheetsValidator : AbstractValidator<GetTimesheetsQuer
 }
 
 /// <summary>Handles <see cref="GetTimesheetsQuery"/>.</summary>
-public sealed class GetTimesheetsHandler : IRequestHandler<GetTimesheetsQuery, Result<PagedResult<TimesheetDto>>>
+public sealed class GetTimesheetsHandler : IRequestHandler<GetTimesheetsQuery, Result<PagedResult<TimesheetListItem>>>
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUser;
@@ -271,32 +284,66 @@ public sealed class GetTimesheetsHandler : IRequestHandler<GetTimesheetsQuery, R
         _currentUser = currentUser;
     }
 
-    /// <inheritdoc />
-    public async Task<Result<PagedResult<TimesheetDto>>> Handle(
+    public async Task<Result<PagedResult<TimesheetListItem>>> Handle(
         GetTimesheetsQuery request,
         CancellationToken cancellationToken)
     {
-        var employeeId = request.EmployeeId ?? _currentUser.EmployeeId;
+        var query = _context.Timesheets.AsNoTracking();
 
-        if (employeeId is null)
+        if (request.EmployeeId.HasValue)
         {
-            return Result.Failure<PagedResult<TimesheetDto>>("No employee record is linked to your account.");
+            query = query.Where(t => t.EmployeeId == request.EmployeeId.Value);
         }
+        else if (!(_currentUser.IsInRole(RoleNames.HRAdmin) ||
+                   _currentUser.IsInRole(RoleNames.HRManager) ||
+                   _currentUser.IsInRole(RoleNames.SystemAdmin)))
+        {
+            var employeeId = _currentUser.EmployeeId;
+            if (employeeId is null)
+            {
+                return Result.Failure<PagedResult<TimesheetListItem>>(
+                    "No employee record is linked to your account.");
+            }
 
-        var query = _context.Timesheets
-            .AsNoTracking()
-            .Where(t => t.EmployeeId == employeeId);
+            query = query.Where(t => t.EmployeeId == employeeId.Value);
+        }
 
         var totalCount = await query.CountAsync(cancellationToken);
 
-        var items = await query
+        var rows = await query
             .OrderByDescending(t => t.WeekStart)
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(t => UpsertTimesheetHandler.Map(t))
+            .Select(t => new
+            {
+                t.Id,
+                t.EmployeeId,
+                EmployeeName = t.Employee.FirstName + " " + t.Employee.LastName,
+                t.WeekStart,
+                t.TotalHours,
+                t.Status,
+            })
             .ToListAsync(cancellationToken);
 
-        return Result.Success(new PagedResult<TimesheetDto>(
+        var items = rows.Select(r =>
+        {
+            const decimal standardHours = 40m;
+            var regular = Math.Min(r.TotalHours, standardHours);
+            var overtime = Math.Max(0m, r.TotalHours - standardHours);
+
+            return new TimesheetListItem(
+                r.Id,
+                r.EmployeeId,
+                r.EmployeeName,
+                r.WeekStart,
+                r.WeekStart.AddDays(6),
+                r.TotalHours,
+                regular,
+                overtime,
+                RecruitmentApiMapping.ToApiTimesheetStatus(r.Status));
+        }).ToList();
+
+        return Result.Success(new PagedResult<TimesheetListItem>(
             items, request.Page, request.PageSize, totalCount));
     }
 }

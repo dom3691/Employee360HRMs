@@ -17,4 +17,13 @@ public class Candidate : AuditableEntity
     /// <summary>Set when converted to an employee record (FR-REC-005).</summary>
     public Guid? EmployeeId { get; set; }
     public Employee? Employee { get; set; }
+
+    /// <summary>Recruiter rating (1-5).</summary>
+    public decimal? Rating { get; set; }
+
+    /// <summary>Current job title supplied at application.</summary>
+    public string? CurrentTitle { get; set; }
+
+    /// <summary>JSON array of recruiter tags.</summary>
+    public string? TagsJson { get; set; }
 }

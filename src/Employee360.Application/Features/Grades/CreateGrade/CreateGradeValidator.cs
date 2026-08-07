@@ -7,18 +7,20 @@ public sealed class CreateGradeValidator : AbstractValidator<CreateGradeCommand>
 {
     public CreateGradeValidator()
     {
-        RuleFor(c => c.Name)
-            .NotEmpty().WithMessage("Grade name is required.")
+        RuleFor(c => c.Title)
+            .NotEmpty().WithMessage("Grade title is required.")
             .MaximumLength(64);
 
-        RuleFor(c => c.Level)
-            .GreaterThanOrEqualTo(1).WithMessage("Level must be 1 or greater.");
+        RuleFor(c => c.Code)
+            .NotEmpty().MaximumLength(16);
 
-        RuleFor(c => c.MinSalary)
-            .GreaterThanOrEqualTo(0).WithMessage("Minimum salary cannot be negative.");
+        RuleFor(c => c.LevelRank)
+            .NotEmpty().MaximumLength(32);
 
-        RuleFor(c => c.MaxSalary)
-            .GreaterThanOrEqualTo(c => c.MinSalary)
-            .WithMessage("Maximum salary must be greater than or equal to minimum salary.");
+        RuleFor(c => c.SalaryMin)
+            .GreaterThanOrEqualTo(0);
+
+        RuleFor(c => c.SalaryMax)
+            .GreaterThanOrEqualTo(c => c.SalaryMin);
     }
 }

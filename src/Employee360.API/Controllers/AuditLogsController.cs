@@ -20,11 +20,16 @@ public sealed class AuditLogsController : ApiControllerBase
         [FromQuery] int pageSize = 20,
         [FromQuery] Guid? userId = null,
         [FromQuery] string? entityName = null,
+        [FromQuery] string? action = null,
+        [FromQuery] string? module = null,
+        [FromQuery] string? outcome = null,
+        [FromQuery] string? search = null,
         [FromQuery] DateTime? fromDate = null,
         [FromQuery] DateTime? toDate = null,
         CancellationToken cancellationToken = default)
         => FromResult(await Sender.Send(
-            new GetAuditLogsPagedQuery(page, pageSize, userId, entityName, fromDate, toDate),
+            new GetAuditLogsPagedQuery(
+                page, pageSize, userId, entityName, action, module, outcome, search, fromDate, toDate),
             cancellationToken));
 
     /// <summary>Exports filtered audit logs as CSV.</summary>

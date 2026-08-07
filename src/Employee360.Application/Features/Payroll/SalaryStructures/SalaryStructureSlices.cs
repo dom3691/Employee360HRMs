@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Employee360.Application.Common.Interfaces;
 using Employee360.Application.Common.Models;
 using Employee360.Application.Common.Validation;
@@ -17,7 +18,11 @@ public sealed record SalaryStructureDto(
     decimal Transport,
     decimal OtherAllowances,
     decimal GrossSalary,
-    bool IsActive);
+    bool IsActive,
+    string? GradeCodes = null,
+    int? EmployeeCount = null,
+    IReadOnlyList<SalaryStructureComponentDto>? Components = null,
+    decimal? GrossMonthly = null);
 
 public sealed record GetSalaryStructuresPagedQuery(int Page = 1, int PageSize = 20)
     : IRequest<Result<PagedResult<SalaryStructureDto>>>;
@@ -45,18 +50,19 @@ public sealed class GetSalaryStructuresPagedHandler
         var query = _context.SalaryStructures.AsNoTracking();
         var total = await query.CountAsync(cancellationToken);
 
-        var items = await query
+        var structures = await query
             .OrderBy(s => s.Name)
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(s => Map(s))
+            .Select(s => new { Structure = s, EmployeeCount = s.EmployeeSalaries.Count })
             .ToListAsync(cancellationToken);
+
+        var items = structures
+            .Select(x => SalaryStructureMapping.Map(x.Structure, x.EmployeeCount))
+            .ToList();
 
         return Result.Success(new PagedResult<SalaryStructureDto>(items, request.Page, request.PageSize, total));
     }
-
-    internal static SalaryStructureDto Map(SalaryStructure s) =>
-        new(s.Id, s.Name, s.Basic, s.Housing, s.Transport, s.OtherAllowances, s.GrossSalary, s.IsActive);
 }
 
 public sealed record CreateSalaryStructureCommand(

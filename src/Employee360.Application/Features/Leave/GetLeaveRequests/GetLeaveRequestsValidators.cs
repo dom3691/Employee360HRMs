@@ -22,3 +22,13 @@ public sealed class GetApprovalQueueValidator : AbstractValidator<GetApprovalQue
         RuleFor(q => q.PageSize).ValidPageSize();
     }
 }
+
+/// <summary>Input validation for <see cref="GetAllLeaveRequestsQuery"/>.</summary>
+public sealed class GetAllLeaveRequestsValidator : AbstractValidator<GetAllLeaveRequestsQuery>
+{
+    public GetAllLeaveRequestsValidator()
+    {
+        RuleFor(q => q.Page).ValidPage();
+        RuleFor(q => q.PageSize).ValidPageSize();
+    }
+}

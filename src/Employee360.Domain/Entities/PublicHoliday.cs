@@ -13,4 +13,13 @@ public class PublicHoliday : AuditableEntity
 
     /// <summary>Calendar year (denormalized for fast lookups).</summary>
     public int Year { get; set; }
+
+    /// <summary>National, Religious, or Regional.</summary>
+    public string? HolidayType { get; set; }
+
+    /// <summary>When true, the holiday repeats annually on the same calendar date.</summary>
+    public bool IsRecurring { get; set; }
+
+    /// <summary>Optional region scope (null = nationwide).</summary>
+    public string? Region { get; set; }
 }

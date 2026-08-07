@@ -32,10 +32,11 @@ public sealed class SalaryStructuresController : ApiControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Update(
         [FromRoute] Guid id,
-        [FromBody] UpdateSalaryStructureRequest body,
+        [FromBody] UpdateSalaryStructureComponentsRequest body,
         CancellationToken cancellationToken)
         => FromResult(await Sender.Send(
-            new UpdateSalaryStructureCommand(id, body.Name, body.Basic, body.Housing, body.Transport, body.OtherAllowances, body.IsActive),
+            new UpdateSalaryStructureComponentsCommand(
+                id, body.Name, body.GradeCodes, body.GrossMonthly, body.Components),
             cancellationToken));
 
     [HttpDelete("{id:guid}")]
@@ -44,6 +45,9 @@ public sealed class SalaryStructuresController : ApiControllerBase
     public async Task<IActionResult> Delete([FromRoute] Guid id, CancellationToken cancellationToken)
         => FromResult(await Sender.Send(new DeleteSalaryStructureCommand(id), cancellationToken));
 
-    public sealed record UpdateSalaryStructureRequest(
-        string Name, decimal Basic, decimal Housing, decimal Transport, decimal OtherAllowances, bool IsActive);
+    public sealed record UpdateSalaryStructureComponentsRequest(
+        string Name,
+        string GradeCodes,
+        decimal GrossMonthly,
+        IReadOnlyList<SalaryStructureComponentDto> Components);
 }

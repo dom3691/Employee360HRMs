@@ -1,4 +1,7 @@
+using Employee360.Application.Common.Extensions;
 using Employee360.Application.Common.Interfaces;
+using Employee360.Application.Common.Models;
+using Employee360.Application.Common.Validation;
 using Employee360.Domain.Common;
 using Employee360.Domain.Entities;
 using Employee360.Domain.Enums;
@@ -14,12 +17,117 @@ public sealed record EmployeeGoalDto(
     Guid ReviewCycleId,
     string CycleName,
     Guid EmployeeId,
+    string? EmployeeName,
+    string? DepartmentName,
     string Title,
     string? Description,
+    string? Category,
+    string? Status,
     decimal Weight,
-    decimal TargetValue,
-    decimal? ActualValue,
-    decimal AchievementPercent);
+    DateOnly? DueDate,
+    string? TargetValue,
+    string? ActualValue,
+    decimal? AchievementPercent,
+    IReadOnlyList<GoalKeyResultDto>? KeyResults);
+
+public sealed record GoalKeyResultDto(
+    Guid Id,
+    string Title,
+    string Status,
+    decimal ProgressPercent,
+    string? MetricLabel);
+
+public sealed record GetGoalsPagedQuery(
+    int Page = 1,
+    int PageSize = 20,
+    Guid? EmployeeId = null,
+    string? Category = null,
+    string? Status = null) : IRequest<Result<PagedResult<EmployeeGoalDto>>>;
+
+public sealed class GetGoalsPagedValidator : AbstractValidator<GetGoalsPagedQuery>
+{
+    public GetGoalsPagedValidator()
+    {
+        RuleFor(q => q.Page).ValidPage();
+        RuleFor(q => q.PageSize).ValidPageSize();
+    }
+}
+
+public sealed class GetGoalsPagedHandler : IRequestHandler<GetGoalsPagedQuery, Result<PagedResult<EmployeeGoalDto>>>
+{
+    private readonly IApplicationDbContext _context;
+
+    public GetGoalsPagedHandler(IApplicationDbContext context) => _context = context;
+
+    public async Task<Result<PagedResult<EmployeeGoalDto>>> Handle(
+        GetGoalsPagedQuery request,
+        CancellationToken cancellationToken)
+    {
+        var query = _context.EmployeeGoals.AsNoTracking();
+
+        if (request.EmployeeId.HasValue)
+        {
+            query = query.Where(g => g.EmployeeId == request.EmployeeId.Value);
+        }
+
+        var projected = query
+            .OrderByDescending(g => g.ReviewCycle!.StartDate)
+            .ThenBy(g => g.Title)
+            .Select(g => new
+            {
+                g.Id,
+                g.ReviewCycleId,
+                CycleName = g.ReviewCycle!.Name,
+                g.EmployeeId,
+                EmployeeName = g.Employee!.FirstName + " " + g.Employee.LastName,
+                DepartmentName = g.Employee.Department != null ? g.Employee.Department.Name : null,
+                g.Title,
+                g.Description,
+                g.Weight,
+                g.TargetValue,
+                g.ActualValue,
+                CycleEndDate = g.ReviewCycle.EndDate,
+            });
+
+        var paged = await projected.ToPagedResultAsync(request.Page, request.PageSize, cancellationToken);
+
+        var items = paged.Items.Select(g =>
+        {
+            var achievement = g.TargetValue > 0 && g.ActualValue.HasValue
+                ? Math.Round(Math.Min(g.ActualValue.Value / g.TargetValue, 1m) * 100m, 2, MidpointRounding.AwayFromZero)
+                : (decimal?)null;
+
+            var status = achievement switch
+            {
+                >= 100 => "Complete",
+                >= 70 => "OnTrack",
+                >= 40 => "AtRisk",
+                _ => "Behind",
+            };
+
+            return new EmployeeGoalDto(
+                g.Id,
+                g.ReviewCycleId,
+                g.CycleName,
+                g.EmployeeId,
+                g.EmployeeName,
+                g.DepartmentName,
+                g.Title,
+                g.Description,
+                request.Category ?? "Performance",
+                request.Status ?? status,
+                g.Weight,
+                g.CycleEndDate,
+                g.TargetValue.ToString("0.##"),
+                g.ActualValue?.ToString("0.##"),
+                achievement,
+                null);
+        }).ToList();
+
+        return Result.Success(new PagedResult<EmployeeGoalDto>(
+            items, paged.Page, paged.PageSize, paged.TotalCount));
+    }
+}
 
 public sealed record GoalInputItem(
     string Title,
@@ -136,15 +244,29 @@ public sealed class GetEmployeeGoalsHandler : IRequestHandler<GetEmployeeGoalsQu
         return Result.Success<IReadOnlyList<EmployeeGoalDto>>(dtos);
     }
 
-    internal static EmployeeGoalDto MapGoal(EmployeeGoal g, string cycleName)
+    internal static EmployeeGoalDto MapGoal(EmployeeGoal g, string cycleName, string? employeeName = null, string? departmentName = null)
     {
         var achievement = g.TargetValue > 0 && g.ActualValue.HasValue
             ? Math.Round(Math.Min(g.ActualValue.Value / g.TargetValue, 1m) * 100m, 2, MidpointRounding.AwayFromZero)
-            : 0m;
+            : (decimal?)null;
+
+        var status = achievement switch
+        {
+            >= 100 => "Complete",
+            >= 70 => "OnTrack",
+            >= 40 => "AtRisk",
+            _ => "Behind",
+        };
 
         return new EmployeeGoalDto(
             g.Id, g.ReviewCycleId, cycleName, g.EmployeeId,
-            g.Title, g.Description, g.Weight, g.TargetValue, g.ActualValue, achievement);
+            employeeName, departmentName,
+            g.Title, g.Description, "Performance", status,
+            g.Weight, null,
+            g.TargetValue.ToString("0.##"),
+            g.ActualValue?.ToString("0.##"),
+            achievement,
+            null);
     }
 }
 

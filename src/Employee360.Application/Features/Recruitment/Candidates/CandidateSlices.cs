@@ -1,4 +1,6 @@
+using System.Text.Json;
 using Employee360.Application.Common.Interfaces;
+using Employee360.Application.Common.Mapping;
 using Employee360.Application.Common.Models;
 using Employee360.Application.Common.Services;
 using Employee360.Application.Common.Validation;
@@ -21,9 +23,13 @@ public sealed record CandidateDto(
     string Name,
     string Email,
     string? Phone,
-    CandidateStage Stage,
+    string Stage,
     string? ResumePath,
-    Guid? EmployeeId);
+    Guid? EmployeeId,
+    string? CurrentTitle,
+    decimal? Rating,
+    DateOnly? AppliedDate,
+    IReadOnlyList<string>? Tags);
 
 // ---------------------------------------------------------------------------
 // Apply / CRUD
@@ -152,11 +158,11 @@ public sealed class GetCandidatesHandler : IRequestHandler<GetCandidatesQuery, R
 
         var total = await query.CountAsync(cancellationToken);
 
-        var items = await query
+        var candidates = await query
             .OrderByDescending(c => c.CreatedAt)
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(c => new CandidateDto(
+            .Select(c => new CandidateRow(
                 c.Id,
                 c.JobPostingId,
                 c.JobPosting!.Title,
@@ -165,8 +171,14 @@ public sealed class GetCandidatesHandler : IRequestHandler<GetCandidatesQuery, R
                 c.Phone,
                 c.Stage,
                 c.ResumePath,
-                c.EmployeeId))
+                c.EmployeeId,
+                c.CurrentTitle,
+                c.Rating,
+                c.CreatedAt,
+                c.TagsJson))
             .ToListAsync(cancellationToken);
+
+        var items = candidates.Select(CandidateMapping.Map).ToList();
 
         return Result.Success(new PagedResult<CandidateDto>(
             items, request.Page, request.PageSize, total));
@@ -174,6 +186,50 @@ public sealed class GetCandidatesHandler : IRequestHandler<GetCandidatesQuery, R
 }
 
 public sealed record GetCandidateByIdQuery(Guid Id) : IRequest<Result<CandidateDto>>;
+
+internal sealed record CandidateRow(
+    Guid Id,
+    Guid JobPostingId,
+    string JobTitle,
+    string Name,
+    string Email,
+    string? Phone,
+    CandidateStage Stage,
+    string? ResumePath,
+    Guid? EmployeeId,
+    string? CurrentTitle,
+    decimal? Rating,
+    DateTime CreatedAt,
+    string? TagsJson);
+
+internal static class CandidateMapping
+{
+    internal static CandidateDto Map(CandidateRow c) =>
+        new(
+            c.Id,
+            c.JobPostingId,
+            c.JobTitle,
+            c.Name,
+            c.Email,
+            c.Phone,
+            RecruitmentApiMapping.ToApiStage(c.Stage),
+            c.ResumePath,
+            c.EmployeeId,
+            c.CurrentTitle,
+            c.Rating,
+            DateOnly.FromDateTime(c.CreatedAt),
+            DeserializeTags(c.TagsJson));
+
+    private static IReadOnlyList<string>? DeserializeTags(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return null;
+        }
+
+        return JsonSerializer.Deserialize<List<string>>(json);
+    }
+}
 
 public sealed class GetCandidateByIdHandler : IRequestHandler<GetCandidateByIdQuery, Result<CandidateDto>>
 {
@@ -185,10 +241,10 @@ public sealed class GetCandidateByIdHandler : IRequestHandler<GetCandidateByIdQu
         GetCandidateByIdQuery request,
         CancellationToken cancellationToken)
     {
-        var item = await _context.Candidates
+        var candidate = await _context.Candidates
             .AsNoTracking()
             .Where(c => c.Id == request.Id)
-            .Select(c => new CandidateDto(
+            .Select(c => new CandidateRow(
                 c.Id,
                 c.JobPostingId,
                 c.JobPosting!.Title,
@@ -197,12 +253,16 @@ public sealed class GetCandidateByIdHandler : IRequestHandler<GetCandidateByIdQu
                 c.Phone,
                 c.Stage,
                 c.ResumePath,
-                c.EmployeeId))
+                c.EmployeeId,
+                c.CurrentTitle,
+                c.Rating,
+                c.CreatedAt,
+                c.TagsJson))
             .FirstOrDefaultAsync(cancellationToken);
 
-        return item is null
+        return candidate is null
             ? Result.Failure<CandidateDto>("Candidate not found.")
-            : Result.Success(item);
+            : Result.Success(CandidateMapping.Map(candidate));
     }
 }
 

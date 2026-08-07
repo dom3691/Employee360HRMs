@@ -27,7 +27,7 @@ public class GradeAndPositionTests
         var handler = new CreateGradeHandler(context);
 
         var result = await handler.Handle(
-            new CreateGradeCommand("Officer II", 3, 3_000_000m, 5_000_000m), default);
+            new CreateGradeCommand("Officer II", "G3", "Level 3", null, 3_000_000m, 5_000_000m), default);
 
         result.IsSuccess.Should().BeTrue();
         var grade = await context.Grades.SingleAsync();
@@ -40,10 +40,10 @@ public class GradeAndPositionTests
     {
         await using var context = CreateContext();
         var handler = new CreateGradeHandler(context);
-        await handler.Handle(new CreateGradeCommand("Officer II", 3, 1m, 2m), default);
+        await handler.Handle(new CreateGradeCommand("Officer II", "G3", "Level 3", null, 1m, 2m), default);
 
         var duplicate = await handler.Handle(
-            new CreateGradeCommand("officer ii", 4, 1m, 2m), default);
+            new CreateGradeCommand("officer ii", "G4", "Level 4", null, 1m, 2m), default);
 
         duplicate.IsFailure.Should().BeTrue();
         duplicate.Error.Should().Contain("already exists");
@@ -54,10 +54,10 @@ public class GradeAndPositionTests
     {
         await using var context = CreateContext();
         var handler = new CreateGradeHandler(context);
-        await handler.Handle(new CreateGradeCommand("Officer II", 3, 1m, 2m), default);
+        await handler.Handle(new CreateGradeCommand("Officer II", "G3", "Level 3", null, 1m, 2m), default);
 
         var duplicate = await handler.Handle(
-            new CreateGradeCommand("Senior Officer", 3, 1m, 2m), default);
+            new CreateGradeCommand("Senior Officer", "G3B", "Level 3", null, 1m, 2m), default);
 
         duplicate.IsFailure.Should().BeTrue();
         duplicate.Error.Should().Contain("level 3");
@@ -69,18 +69,18 @@ public class GradeAndPositionTests
         var validator = new CreateGradeValidator();
 
         var result = validator.Validate(
-            new CreateGradeCommand("Officer II", 3, 5_000_000m, 3_000_000m));
+            new CreateGradeCommand("Officer II", "G3", "Level 3", null, 5_000_000m, 3_000_000m));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e =>
-            e.ErrorMessage.Contains("greater than or equal to minimum"));
+            e.PropertyName == nameof(CreateGradeCommand.SalaryMax));
     }
 
     [Fact]
     public async Task DeleteGrade_ReferencedByPosition_ShouldFail()
     {
         await using var context = CreateContext();
-        var grade = new Grade { Name = "Officer II", Level = 3 };
+        var grade = new Grade { Name = "Officer II", Code = "G3", LevelRank = "Level 3", Level = 3 };
         context.Grades.Add(grade);
         context.Positions.Add(new Position { Title = "Accountant", Code = "ACC", GradeId = grade.Id });
         await context.SaveChangesAsync();

@@ -27,7 +27,8 @@ public static class CandidatePipelineWorkflow
         {
             CandidateStage.Applied => next is CandidateStage.Screening,
             CandidateStage.Screening => next is CandidateStage.Interview,
-            CandidateStage.Interview => next is CandidateStage.Offer,
+            CandidateStage.Interview => next is CandidateStage.Assessment or CandidateStage.Offer,
+            CandidateStage.Assessment => next is CandidateStage.Offer,
             CandidateStage.Offer => next is CandidateStage.Hired,
             _ => false,
         };

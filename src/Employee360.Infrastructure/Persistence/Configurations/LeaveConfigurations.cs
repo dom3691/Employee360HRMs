@@ -20,6 +20,9 @@ public sealed class LeaveTypeConfiguration : IEntityTypeConfiguration<LeaveType>
 
         builder.Property(t => t.Color).HasMaxLength(16);
 
+        builder.Property(t => t.Category).HasMaxLength(32);
+        builder.Property(t => t.PolicyDescription).HasMaxLength(512);
+
         builder.HasOne(t => t.Policy)
             .WithOne(p => p.LeaveType)
             .HasForeignKey<LeavePolicy>(p => p.LeaveTypeId)
@@ -157,6 +160,8 @@ public sealed class PublicHolidayConfiguration : IEntityTypeConfiguration<Public
         builder.HasKey(h => h.Id);
 
         builder.Property(h => h.Name).HasMaxLength(128).IsRequired();
+        builder.Property(h => h.HolidayType).HasMaxLength(32);
+        builder.Property(h => h.Region).HasMaxLength(128);
 
         builder.HasIndex(h => h.Date)
             .IsUnique()

@@ -13,63 +13,53 @@ namespace Employee360.API.Controllers;
 [Route("api/v1/grades")]
 public sealed class GradesController : ApiControllerBase
 {
-    /// <summary>Lists grades ordered by level.</summary>
     [HttpGet]
     [HasPermission(Permissions.Grades.View)]
     [ProducesResponseType(typeof(PagedResult<GradeListItem>), StatusCodes.Status200OK)]
     public async Task<IActionResult> List(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
+        [FromQuery] string? search = null,
         CancellationToken cancellationToken = default)
-        => FromResult(await Sender.Send(new GetGradesPagedQuery(page, pageSize), cancellationToken));
+        => FromResult(await Sender.Send(new GetGradesPagedQuery(page, pageSize, search), cancellationToken));
 
-    /// <summary>Gets one grade by id.</summary>
     [HttpGet("{id:guid}")]
     [HasPermission(Permissions.Grades.View)]
     [ProducesResponseType(typeof(GradeListItem), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> GetById(
-        [FromRoute] Guid id,
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken cancellationToken)
         => FromResult(await Sender.Send(new GetGradeByIdQuery(id), cancellationToken));
 
-    /// <summary>Creates a grade.</summary>
     [HttpPost]
     [HasPermission(Permissions.Grades.Manage)]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create(
         [FromBody] CreateGradeCommand command,
         CancellationToken cancellationToken)
         => FromResult(await Sender.Send(command, cancellationToken));
 
-    /// <summary>Updates a grade.</summary>
     [HttpPut("{id:guid}")]
     [HasPermission(Permissions.Grades.Manage)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Update(
         [FromRoute] Guid id,
-        [FromBody] UpdateGradeRequest body,
+        [FromBody] UpsertGradeRequest body,
         CancellationToken cancellationToken)
         => FromResult(await Sender.Send(
-            new UpdateGradeCommand(id, body.Name, body.Level, body.MinSalary, body.MaxSalary),
+            new UpdateGradeCommand(
+                id, body.Title, body.Code, body.LevelRank, body.Description, body.SalaryMin, body.SalaryMax),
             cancellationToken));
 
-    /// <summary>Soft-deletes a grade (blocked while positions reference it).</summary>
     [HttpDelete("{id:guid}")]
     [HasPermission(Permissions.Grades.Manage)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Delete(
-        [FromRoute] Guid id,
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete([FromRoute] Guid id, CancellationToken cancellationToken)
         => FromResult(await Sender.Send(new DeleteGradeCommand(id), cancellationToken));
 
-    /// <summary>Request body for <see cref="Update"/> (id from route).</summary>
-    public sealed record UpdateGradeRequest(
-        string Name,
-        int Level,
-        decimal MinSalary,
-        decimal MaxSalary);
+    public sealed record UpsertGradeRequest(
+        string Title,
+        string Code,
+        string LevelRank,
+        string? Description,
+        decimal SalaryMin,
+        decimal SalaryMax);
 }

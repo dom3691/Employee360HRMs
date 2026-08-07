@@ -34,6 +34,19 @@ public sealed class CompanyConfiguration : IEntityTypeConfiguration<Company>
             .IsRequired()
             .HasDefaultValue("NGN");
 
+        builder.Property(c => c.TradingName).HasMaxLength(256);
+        builder.Property(c => c.LegalName).HasMaxLength(256);
+        builder.Property(c => c.Industry).HasMaxLength(128);
+        builder.Property(c => c.Website).HasMaxLength(512);
+        builder.Property(c => c.Phone).HasMaxLength(32);
+        builder.Property(c => c.Email).HasMaxLength(256);
+        builder.Property(c => c.StreetAddress).HasMaxLength(256);
+        builder.Property(c => c.City).HasMaxLength(128);
+        builder.Property(c => c.State).HasMaxLength(128);
+        builder.Property(c => c.Country).HasMaxLength(128);
+        builder.Property(c => c.WorkingCalendarJson);
+        builder.Property(c => c.EmailConfigurationJson);
+
         builder.Ignore(c => c.DomainEvents);
     }
 }

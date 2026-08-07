@@ -12,6 +12,12 @@ public sealed class JobPostingConfiguration : IEntityTypeConfiguration<JobPostin
         builder.HasKey(j => j.Id);
         builder.Property(j => j.Title).HasMaxLength(256).IsRequired();
         builder.Property(j => j.Description).IsRequired();
+        builder.Property(j => j.Requirements);
+        builder.Property(j => j.EmploymentType).HasMaxLength(64);
+        builder.Property(j => j.Location).HasMaxLength(256);
+        builder.Property(j => j.SalaryMin).HasPrecision(18, 2);
+        builder.Property(j => j.SalaryMax).HasPrecision(18, 2);
+        builder.Property(j => j.HiringManagerName).HasMaxLength(256);
         builder.HasOne(j => j.Department).WithMany().HasForeignKey(j => j.DepartmentId).OnDelete(DeleteBehavior.SetNull);
         builder.HasIndex(j => j.Status).HasDatabaseName("IX_JobPostings_Status");
         builder.Ignore(j => j.DomainEvents);
@@ -28,6 +34,9 @@ public sealed class CandidateConfiguration : IEntityTypeConfiguration<Candidate>
         builder.Property(c => c.Email).HasMaxLength(256).IsRequired();
         builder.Property(c => c.Phone).HasMaxLength(32);
         builder.Property(c => c.ResumePath).HasMaxLength(512);
+        builder.Property(c => c.CurrentTitle).HasMaxLength(256);
+        builder.Property(c => c.Rating).HasPrecision(3, 1);
+        builder.Property(c => c.TagsJson);
         builder.HasOne(c => c.JobPosting).WithMany(j => j.Candidates).HasForeignKey(c => c.JobPostingId);
         builder.HasOne(c => c.Employee).WithMany().HasForeignKey(c => c.EmployeeId).OnDelete(DeleteBehavior.SetNull);
         builder.HasIndex(c => new { c.JobPostingId, c.Email }).IsUnique().HasDatabaseName("IX_Candidates_JobPostingId_Email");
